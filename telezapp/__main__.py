@@ -1,0 +1,471 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Fábio Scheffer Moraes
+"""Ponto de entrada: python -m telezapp (ou pythonw, sem terminal).
+
+Qualquer erro grave vai para o log e aparece numa caixa de mensagem do
+Windows, porque o app roda sem janela de terminal.
+"""
+import logging
+import os
+import sys
+import threading
+import time
+import traceback
+
+
+_ARQUIVO_FALHA = None      # mantido aberto para o faulthandler
+_INICIO = time.monotonic()  # as etapas da abertura contam a partir daqui
+
+
+def etapa(log, nome):
+    """Uma linha no log com quanto tempo a abertura levou ate aqui: mostra
+    onde ela demora (antivirus lendo as DLLs, disco, rede)."""
+    log.info("abertura: %s (%.1f s desde o início)", nome,
+             time.monotonic() - _INICIO)
+
+
+STD_ERROR_HANDLE = -12
+
+
+def redirecionar_erro_nativo(arquivo):
+    """Faz a saida de erro do Windows (a que o Go e o C usam, sem terminal)
+    escrever no arquivo. Devolve a saida anterior, para quem quiser voltar."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    import msvcrt
+    k = ctypes.windll.kernel32
+    k.GetStdHandle.restype = ctypes.c_void_p
+    k.GetStdHandle.argtypes = [ctypes.c_uint32]
+    k.SetStdHandle.argtypes = [ctypes.c_uint32, ctypes.c_void_p]
+    anterior = k.GetStdHandle(STD_ERROR_HANDLE & 0xFFFFFFFF)
+    k.SetStdHandle(STD_ERROR_HANDLE & 0xFFFFFFFF,
+                   msvcrt.get_osfhandle(arquivo.fileno()))
+    return anterior
+
+
+def tempo_ligado():
+    """Segundos desde que o Windows foi ligado (None fora do Windows)."""
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32
+        k.GetTickCount64.restype = ctypes.c_uint64
+        return k.GetTickCount64() / 1000.0
+    except Exception:
+        return None
+
+
+def escrever_marca(marca):
+    """A marca de sessao aberta guarda o numero do processo e a ultima hora
+    em que o programa estava vivo: se a vez seguinte achar a marca, sabe
+    quando a anterior parou de dar sinal."""
+    with open(marca, "w") as f:
+        f.write("%d\n%d\n" % (os.getpid(), time.time()))
+
+
+def _manter_marca(marca):
+    while True:
+        time.sleep(30)
+        try:
+            escrever_marca(marca)
+        except OSError:
+            pass
+
+
+def abrir_marca(pasta, log):
+    """Avisa no log se a vez anterior caiu (a marca some no fim normal; se
+    ainda existir, ela caiu) e poe a marca desta vez, mantida em dia. Devolve
+    o caminho da marca, ou None se nao der para grava-la."""
+    marca = os.path.join(pasta, "sessao-aberta")
+    try:
+        if os.path.exists(marca):
+            log.warning("a vez anterior terminou sem fechar normalmente "
+                        "(queda do programa ou do Windows); veja "
+                        "falha-nativa.log. %s", descrever_marca(marca))
+        escrever_marca(marca)
+        threading.Thread(target=_manter_marca, args=(marca,), daemon=True,
+                         name="marca-de-sessao").start()
+    except OSError:
+        return None
+    return marca
+
+
+def descrever_marca(marca):
+    """O que a marca da vez anterior conta: quando ela deu o ultimo sinal e
+    se o Windows foi religado desde entao (quando o tempo ligado e menor que
+    o intervalo, houve reinicio ou desligamento no meio)."""
+    try:
+        with open(marca) as f:
+            partes = f.read().split()
+        ultima = float(partes[1])
+    except (OSError, ValueError, IndexError):
+        return "A marca da vez anterior não traz a hora do último sinal."
+    agora = time.time()
+    intervalo = max(0.0, agora - ultima)
+    texto = "O último sinal da vez anterior foi às %s (há %.0f min)." % (
+        time.strftime("%H:%M:%S", time.localtime(ultima)), intervalo / 60)
+    ligado = tempo_ligado()
+    if ligado is not None:
+        texto += " O Windows está ligado há %.0f min%s." % (
+            ligado / 60, "; foi religado depois desse sinal"
+            if ligado < intervalo else "; continuou ligado desde então")
+    return texto
+
+
+def descrever_ambiente(log):
+    try:
+        import platform
+        import sysconfig
+        from telezapp import config
+        ligado = tempo_ligado()
+        log.info("ambiente: %s, processador %s (Python %s), Python %s, %s, "
+                 "dados em %s, argumentos %s, Windows ligado há %s",
+                 platform.platform(), platform.machine() or "?",
+                 sysconfig.get_platform(), platform.python_version(),
+                 "empacotado" if getattr(sys, "frozen", False) else "código",
+                 config.pasta_dados(), _argumentos_para_o_log(sys.argv[1:]),
+                 "%.0f min" % (ligado / 60) if ligado is not None
+                 else "? min")
+    except Exception:
+        log.exception("não consegui descrever o ambiente")
+
+
+def _argumentos_para_o_log(argumentos):
+    """Sem o link recebido: ele pode trazer telefone ou texto."""
+    return [a for i, a in enumerate(argumentos)
+            if i == 0 or argumentos[i - 1] != "--link"]
+
+
+def _link_recebido(argumentos):
+    """O link de `--link endereco`, ou ""."""
+    if "--link" in argumentos:
+        i = argumentos.index("--link") + 1
+        if i < len(argumentos):
+            return argumentos[i]
+    return ""
+
+
+def caixa_de_erro(texto):
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(None, texto, "TeleZapp PRO", 0x10)
+    except Exception:
+        print(texto, file=sys.stderr)
+
+
+def _vigiar_aviso(sinal, janela, instancia):
+    """Espera uma segunda abertura pedir que a janela apareca."""
+    import wx
+    while True:
+        if instancia.esperar(sinal, 500):
+            wx.CallAfter(janela._mostrar_da_bandeja)
+            wx.CallAfter(janela.abrir_links_recebidos)
+        if getattr(janela, "_saindo", False):
+            return
+
+
+def terminar_ja(codigo=0):
+    """Termina o processo agora. O os._exit comum ainda descarrega as DLLs
+    (DLL_PROCESS_DETACH), e a do WhatsApp, em Go, ja deixou o processo preso
+    depois de tudo gravado: a janela sumia, nada aparecia e uma nova abertura
+    achava que ja havia um TeleZapp PRO. TerminateProcess nao passa por essa
+    etapa. Sem ele (fora do Windows), cai no os._exit."""
+    try:
+        import ctypes
+        k = ctypes.windll.kernel32
+        k.GetCurrentProcess.restype = ctypes.c_void_p
+        k.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+        k.TerminateProcess(k.GetCurrentProcess(), codigo)
+    except Exception:
+        pass
+    os._exit(codigo)
+
+
+def _vigiar_o_fim():
+    """Janela fechada: se o programa nao terminar, a pessoa nao o ve mais, nao
+    consegue abri-lo de novo e uma atualizacao nao troca a pasta."""
+    def vigia():
+        time.sleep(30)
+        logging.getLogger("telezapp").warning(
+            "a janela fechou e o programa não terminou; encerrando")
+        logging.shutdown()
+        terminar_ja(0)
+    threading.Thread(target=vigia, daemon=True, name="vigia-do-fim").start()
+
+
+def esperar_processo(argumentos, segundos=60):
+    """`--esperar-pid N` (reinicio): espera o processo N, o TeleZapp PRO que
+    pediu para abrir de novo, terminar. Sem isso esta abertura o acharia
+    ainda fechando, so pediria a ele que mostrasse a janela e sairia."""
+    if "--esperar-pid" not in argumentos:
+        return
+    try:
+        pid = int(argumentos[argumentos.index("--esperar-pid") + 1])
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        k32.OpenProcess.restype = ctypes.c_void_p
+        h = k32.OpenProcess(0x00100000, False, pid)      # SYNCHRONIZE
+        if not h:
+            return                                      # ja terminou
+        try:
+            k32.WaitForSingleObject(ctypes.c_void_p(h), int(segundos * 1000))
+        finally:
+            k32.CloseHandle(ctypes.c_void_p(h))
+    except Exception:
+        pass
+
+
+def main():
+    esperar_processo(sys.argv[1:])
+    # Sem terminal (pythonw), stdout e stderr nao existem: bibliotecas que
+    # escrevem neles nao podem falhar por isso.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
+    if "--desinstalar" in sys.argv[1:]:
+        from telezapp.interface.instalacao import desinstalar_pelo_aplicativo
+        return desinstalar_pelo_aplicativo()
+    from telezapp import NOME, VERSAO, config
+    arquivo_log = config.configurar_registro()
+    log = logging.getLogger("telezapp")
+    log.info("%s versão %s iniciado, código em %s", NOME, VERSAO,
+             os.path.dirname(os.path.abspath(__file__)))
+    # Queda dentro de uma biblioteca nativa (sem erro do Python): grava em
+    # logs\falha-nativa.log em que ponto do codigo cada thread estava.
+    try:
+        import faulthandler
+        global _ARQUIVO_FALHA
+        _ARQUIVO_FALHA = open(
+            os.path.join(os.path.dirname(arquivo_log), "falha-nativa.log"),
+            "a", encoding="utf-8")
+        _ARQUIVO_FALHA.write("---- %s iniciado ----\n" % VERSAO)
+        _ARQUIVO_FALHA.flush()
+        faulthandler.enable(file=_ARQUIVO_FALHA, all_threads=True)
+        # sem janela de terminal o stderr do processo vai para o nada: o que
+        # as DLLs (a do WhatsApp, em Go) escrevem ao cair fica neste arquivo
+        os.dup2(_ARQUIVO_FALHA.fileno(), 2)
+        # o Go escreve a falha fatal na saida de erro do Windows, nao no
+        # descritor 2 do Python: sem isto o motivo da queda se perde
+        os.environ.setdefault("GOTRACEBACK", "all")
+        redirecionar_erro_nativo(_ARQUIVO_FALHA)
+    except Exception:
+        log.exception("não foi possível ativar o registro de falhas nativas")
+
+    def erro_nao_tratado(tipo, valor, tb):
+        log.error("ERRO NÃO TRATADO:\n%s",
+                  "".join(traceback.format_exception(tipo, valor, tb)))
+    sys.excepthook = erro_nao_tratado
+
+    def erro_em_thread(args):
+        if args.exc_type is SystemExit:
+            return
+        log.error("ERRO NÃO TRATADO na thread %s:\n%s",
+                  getattr(args.thread, "name", "?"), "".join(
+                      traceback.format_exception(
+                          args.exc_type, args.exc_value, args.exc_traceback)))
+    threading.excepthook = erro_em_thread
+    descrever_ambiente(log)
+    prioridade = None
+    try:
+        from telezapp.midia import prioridade
+        if config.Config().get("prioridade_abertura"):
+            prioridade.abertura(True)     # volta ao normal depois da abertura
+        else:
+            prioridade = None
+    except Exception:
+        log.exception("não consegui ajustar a prioridade da abertura")
+        prioridade = None
+
+    try:
+        import wx
+        from telezapp.armazenamento.bancos import Bancos
+        from telezapp.interface.janela import Janela
+        from telezapp.nucleo.contas import Contas
+        from telezapp.nucleo.eventos import Barramento
+        from telezapp.nucleo.midias import GerenteMidias
+    except Exception:
+        log.error("falha ao carregar os componentes:\n%s",
+                  traceback.format_exc())
+        caixa_de_erro("O %s não conseguiu carregar os componentes. Rode o "
+                      "iniciar-telezapp.bat de novo. Detalhes no log:\n%s"
+                      % (NOME, arquivo_log))
+        return 1
+
+    etapa(log, "componentes carregados")
+    app = wx.App(False)
+    etapa(log, "aplicativo wx criado")
+    try:
+        from telezapp.interface import limite_de_lista
+        limite_de_lista.instalar()     # som de limite em todas as listas
+    except Exception:
+        log.warning("som de limite de lista indisponível: %s",
+                    traceback.format_exc())
+    from telezapp.nucleo import atualizador, instalacao
+    programa = instalacao.pasta_do_programa()
+    if programa:
+        if atualizador.troca_falhou(programa):
+            log.warning("a atualização anterior não conseguiu trocar a pasta "
+                        "do programa")
+            wx.MessageBox(
+                "A atualização não terminou, porque a pasta do %s estava em "
+                "uso, e esta continua sendo a versão %s. Feche o programa, "
+                "confira no Gerenciador de Tarefas se ele não ficou aberto e "
+                "tente de novo. Se continuar, baixe o instalador na página "
+                "do projeto." % (NOME, VERSAO), NOME,
+                wx.OK | wx.ICON_WARNING)
+        atualizador.limpar_restos(programa)     # sobras de uma atualizacao
+        from telezapp.interface.instalacao import mostrar_boas_vindas
+        if mostrar_boas_vindas() != "continuar":
+            log.info("abertura: a tela de boas-vindas não foi seguida; "
+                     "saindo")
+            return 0
+    unico = wx.SingleInstanceChecker("TeleZappPRO-" + os.environ.get(
+        "USERNAME", ""), config.pasta())
+    if unico.IsAnotherRunning():
+        # a outra abertura pode estar escondida na bandeja: pede a ela que
+        # mostre a janela, em vez de dizer que ja esta aberto
+        from telezapp.nucleo import instancia, links_recebidos
+        links_recebidos.guardar(_link_recebido(sys.argv[1:]))
+        avisou = instancia.acionar()
+        log.info("abertura: já há outro TeleZapp PRO aberto; %s",
+                 "pedi a ele que mostre a janela" if avisou
+                 else "não consegui avisá-lo")
+        if not avisou:
+            wx.MessageBox("O %s já está aberto." % NOME, NOME,
+                          wx.OK | wx.ICON_INFORMATION)
+        return 0
+    # so depois de saber que e a unica aberta: a marca de quem ainda esta
+    # aberto nao e sinal de queda (e nao pode ser trocada pela desta)
+    marca = abrir_marca(os.path.dirname(arquivo_log), log)
+    from telezapp.nucleo import instancia
+    sinal = instancia.criar_sinal()
+    config.limpar_temporarios()   # sobras de uma abertura anterior
+    try:
+        from telezapp.nucleo import backup
+        # a configuracao ainda nao foi registrada: le-la aqui para saber
+        # onde ficam o banco unico, as sessoes e as midias do layout antigo
+        cfg_restauracao = config.Config()
+        config.definir_cfg(cfg_restauracao)
+        trocadas = backup.aplicar_pendente(
+            config.pasta_dados(),
+            config.pasta_do_layout_antigo(cfg_restauracao))
+        if trocadas:
+            log.info("backup restaurado: %s", ", ".join(trocadas))
+    except Exception:
+        log.error("falha ao restaurar o backup:\n%s", traceback.format_exc())
+        caixa_de_erro("O %s não conseguiu terminar de restaurar o backup. "
+                      "O que havia antes está na pasta antes-da-restauracao, "
+                      "dentro da pasta de dados. Detalhes no log:\n%s"
+                      % (NOME, arquivo_log))
+
+    # seguranca ao entrar: antes de abrir o banco e as contas
+    try:
+        from telezapp.interface import seguranca as ui_seg
+        if not ui_seg.verificar_ao_abrir(config.Config(),
+                                         config.pasta_dados()):
+            log.info("abertura: sem autenticação; saindo")
+            if marca:
+                try:
+                    os.remove(marca)
+                except OSError:
+                    pass
+            return 0
+    except Exception:
+        log.error("falha na seguranca ao entrar:\n%s", traceback.format_exc())
+        caixa_de_erro("O %s não conseguiu conferir a proteção ao entrar e "
+                      "não vai abrir. Detalhes no log:\n%s" % (NOME,
+                                                                arquivo_log))
+        return 1
+
+    try:
+        cfg = config.Config()
+        config.definir_cfg(cfg)
+        from telezapp.nucleo import migracao
+        migracao.migrar(cfg)
+        etapa(log, "dados das contas nas pastas proprias")
+        for aviso in migracao.AVISOS:
+            wx.MessageBox(aviso, "TeleZapp PRO", wx.OK | wx.ICON_WARNING)
+        banco = Bancos(cfg)
+        etapa(log, "bancos por conta prontos")
+        barramento = Barramento(wx.CallAfter)
+        janela = Janela(cfg, banco, barramento)
+        janela.vigiar_o_fim = _vigiar_o_fim
+        etapa(log, "janela criada")
+        janela.contas = Contas(cfg, banco, barramento, janela.pedir,
+                               janela.obter_credenciais_telegram)
+        janela.midias = GerenteMidias(cfg, banco, barramento,
+                                      janela.contas.provedor)
+    except Exception:
+        log.error("falha ao montar a janela:\n%s", traceback.format_exc())
+        caixa_de_erro("O %s não conseguiu abrir a janela. Detalhes no log:"
+                      "\n%s" % (NOME, arquivo_log))
+        return 1
+
+    def sessao_do_windows(evt):
+        log.info("o Windows está encerrando a sessão do usuário "
+                 "(desligar, reiniciar ou sair)")
+        janela.marcar_windows_encerrando()
+        if evt.GetEventType() == wx.wxEVT_QUERY_END_SESSION:
+            return      # sem Skip: o padrao fecharia a janela e ela vetaria
+        evt.Skip()
+    app.Bind(wx.EVT_QUERY_END_SESSION, sessao_do_windows)
+    app.Bind(wx.EVT_END_SESSION, sessao_do_windows)
+    # aberto pelo Windows ao entrar na conta (--segundo-plano): com a opcao
+    # de segundo plano ligada, abre minimizada na barra de tarefas
+    minimizada = ("--segundo-plano" in sys.argv[1:]
+                  and bool(cfg.get("segundo_plano")))
+    if minimizada:
+        janela.Iconize(True)
+    janela.Show()
+    if minimizada:
+        janela._tirar_do_alttab()
+    etapa(log, "janela mostrada")
+    if prioridade is not None:
+        temporizador = threading.Timer(prioridade.SEGUNDOS_DE_ABERTURA,
+                                       prioridade.abertura, args=(False,))
+        temporizador.daemon = True
+        temporizador.start()
+    if cfg.get("abrir_links_no_telezapp"):
+        from telezapp.nucleo import protocolos
+        if not protocolos.registrar():
+            log.warning("não consegui registrar o TeleZapp PRO para abrir links")
+    from telezapp.nucleo import links_recebidos
+    links_recebidos.guardar(_link_recebido(sys.argv[1:]))
+    if cfg.get("iniciar_com_windows"):
+        from telezapp.nucleo import inicializacao
+        inicializacao.definir(True)      # mantem o caminho em dia
+    if sinal:
+        threading.Thread(target=_vigiar_aviso,
+                         args=(sinal, janela, instancia),
+                         daemon=True, name="aviso-de-abertura").start()
+    wx.CallAfter(janela.comecar)
+    wx.CallAfter(janela.abrir_links_recebidos)
+    app.MainLoop()
+    janela.midias.parar()
+    # os._exit no fim nao roda o atexit: fecha o fluxo dos avisos aqui
+    try:
+        from telezapp.acessibilidade import fala as fala_sons
+        fala_sons.fechar_sons()
+    except Exception:
+        pass
+    banco.fechar()
+    config.limpar_temporarios()
+    log.info("encerrado normalmente")
+    if marca:
+        try:
+            os.remove(marca)
+        except OSError:
+            pass
+    # Garante o fim do processo mesmo se alguma biblioteca deixar uma
+    # thread presa (tudo ja foi gravado e fechado acima).
+    logging.shutdown()
+    terminar_ja(0)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        caixa_de_erro("Erro ao iniciar o TeleZapp PRO:\n" + traceback.format_exc())
+        sys.exit(1)

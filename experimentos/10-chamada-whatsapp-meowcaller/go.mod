@@ -1,0 +1,47 @@
+module github.com/reffehcsoibaf/telezapp-experimentos/chamadas
+
+go 1.27.2
+
+require (
+	filippo.io/edwards25519 v1.2.0 // indirect
+	github.com/beeper/argo-go v1.1.2 // indirect
+	github.com/coder/websocket v1.8.15 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/elliotchance/orderedmap/v3 v3.1.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b // indirect
+	github.com/pion/datachannel v1.6.0 // indirect
+	github.com/pion/dtls/v3 v3.1.2 // indirect
+	github.com/pion/logging v0.2.4 // indirect
+	github.com/pion/opus v0.1.0 // indirect
+	github.com/pion/randutil v0.1.0 // indirect
+	github.com/pion/sctp v1.9.4 // indirect
+	github.com/pion/transport/v4 v4.0.1 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
+	go.mau.fi/libsignal v0.2.2 // indirect
+	go.mau.fi/util v0.11.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
+	modernc.org/libc v1.77.1 // indirect
+	modernc.org/mathutil v1.7.1 // indirect
+	modernc.org/memory v1.12.1 // indirect
+)
+
+require (
+	github.com/purpshell/meowcaller v0.0.0-20260906234207-c48c3e2a243c
+	github.com/rs/zerolog v1.35.1
+	go.mau.fi/whatsmeow v0.0.0-20260921121126-35ae40906e74
+	modernc.org/sqlite v1.60.1
+)
+
+replace github.com/purpshell/meowcaller => C:/Users/fabio/telezapp-go/src/mc-whatsmeow

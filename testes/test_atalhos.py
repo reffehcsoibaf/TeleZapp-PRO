@@ -1,0 +1,148 @@
+"""Atalhos: a forma canonica, o que nao pode ser atalho, o registro e os
+conflitos."""
+from telezapp.nucleo import atalhos as at
+
+
+def test_normalizar_poe_na_forma_canonica():
+    assert at.normalizar("ctrl+shift+e") == "Ctrl+Shift+E"
+    assert at.normalizar("Shift + Control + e") == "Ctrl+Shift+E"
+    assert at.normalizar("control+alt+f5") == "Ctrl+Alt+F5"
+    assert at.normalizar("Ctrl+PageUp") == "Ctrl+PgUp"
+    assert at.normalizar("Ctrl+,") == "Ctrl+,"
+    assert at.normalizar("F7") == "F7"
+    assert at.normalizar("") is None
+    assert at.normalizar("Ctrl+") is None
+    assert at.normalizar("Ctrl+Shift") is None
+    assert at.normalizar("Ctrl+A+B") is None
+    assert at.normalizar("Ctrl+Banana") is None
+
+
+def test_partes_e_montar_sao_inversos():
+    for c in ("Ctrl+Shift+E", "Alt+4", "F7", "Ctrl+,", "Ctrl+Alt+PgDn"):
+        assert at.montar(*at.partes(c)) == c
+
+
+def test_o_que_nao_serve_de_atalho():
+    assert at.problema("Ctrl+Shift+E") == ""
+    assert at.problema("F7") == ""
+    assert at.problema("Shift+F2") == ""
+    assert at.problema("Alt+4") == ""
+    assert at.problema("Enter")
+    assert at.problema("Ctrl+V")
+    assert at.problema("Alt+F4")
+    assert at.problema("E")                 # letra solta atrapalha a digitacao
+    assert at.problema("Shift+E")
+    assert at.problema("Alt+E") == ""       # livre: o Enviar nao tem mais tecla de acesso
+    assert at.problema("Alt+M") == ""       # Alt sozinho ja abre o menu
+    assert at.problema("Ctrl+Enter") == ""  # o atalho de fabrica de enviar
+    assert at.problema("Shift+Enter")       # quebra a linha
+    assert at.problema("Alt+R") == ""       # Alt com letra livre serve
+    assert at.problema(None)
+
+
+def registro():
+    r = at.Registro()
+    r.registrar("a", "&Alfa...\tCtrl+1", "Mensagens", "Ctrl+1")
+    r.registrar("b", "&Beta", "Mensagens")
+    r.registrar("c", "Ga&ma", "Chamadas", "Ctrl+Shift+C")
+    return r
+
+
+def test_rotulo_perde_a_letra_de_acesso_e_o_atalho():
+    r = registro()
+    assert r.acoes["a"].rotulo == "Alfa..."
+    assert r.acoes["c"].rotulo == "Gama"
+    assert r.acoes["a"].padrao == "Ctrl+1"
+
+
+def test_efetivo_usa_o_personalizado_ou_o_padrao():
+    r = registro()
+    assert r.efetivo("a") == "Ctrl+1" and r.efetivo("b") == ""
+    r.definir_personalizados({"a": "ctrl+2", "c": ""})
+    assert r.efetivo("a") == "Ctrl+2"
+    assert r.efetivo("c") == ""            # tirado de proposito
+    assert r.efetivo("b") == ""
+
+
+def test_dono_acha_quem_ja_usa_a_combinacao():
+    r = registro()
+    assert r.dono("Ctrl+1").chave == "a"
+    assert r.dono("Ctrl+1", ignorar="a") is None
+    assert r.dono("Ctrl+9") is None and r.dono("") is None
+
+
+def test_trocando_tira_o_atalho_de_quem_usava():
+    r = registro()
+    pers = r.trocando("b", "Ctrl+1")
+    assert r.efetivo("b", pers) == "Ctrl+1"
+    assert r.efetivo("a", pers) == ""      # perdeu o atalho
+    assert r.efetivo("a") == "Ctrl+1"      # o registro nao mudou
+
+
+def test_voltar_ao_padrao_nao_guarda_nada():
+    r = registro()
+    pers = r.com_atalho("a", "Ctrl+2")
+    assert pers == {"a": "Ctrl+2"}
+    assert r.com_atalho("a", "Ctrl+1", pers) == {}
+
+
+def test_busca_por_funcao_categoria_ou_atalho():
+    r = registro()
+    assert [a.chave for a, _ in r.buscar("alfa")] == ["a"]
+    assert [a.chave for a, _ in r.buscar("chamadas")] == ["c"]
+    assert [a.chave for a, _ in r.buscar("ctrl shift")] == ["c"]
+    assert [a.chave for a, _ in r.buscar("Ctrl+1")] == ["a"]
+    assert [a.chave for a, _ in r.buscar("mensagens")] == ["a", "b"]
+    assert r.buscar("zzz") == []
+
+
+def test_texto_falado():
+    assert at.texto_falado("Ctrl+Shift+PgUp") == "Control Shift Page Up"
+    assert at.texto_falado("Ctrl+,") == "Control vírgula"
+    assert at.texto_falado("") == "sem atalho"
+
+
+def test_exibir_usa_nomes_em_portugues():
+    assert at.exibir("Ctrl+Shift+Left") == "Ctrl+Shift+Seta para a esquerda"
+    assert at.exibir("Ctrl+Shift+Right") == "Ctrl+Shift+Seta para a direita"
+    assert at.exibir("Ctrl+Shift+Up") == "Ctrl+Shift+Seta para cima"
+    assert at.exibir("Ctrl+Shift+Down") == "Ctrl+Shift+Seta para baixo"
+    assert at.exibir("Ctrl+Shift+PgUp") == "Ctrl+Shift+Page Up"
+    assert at.exibir("Ctrl+Space") == "Ctrl+Espaço"
+    assert at.exibir("Ctrl+,") == "Ctrl+,"
+    assert at.exibir("F7") == "F7"
+    assert at.exibir("") == ""
+
+
+def test_falado_nao_traz_nomes_em_ingles():
+    falado = at.texto_falado("Ctrl+Shift+Left")
+    assert falado == "Control Shift Seta para a esquerda"
+    for ingles in ("Left", "Right", "Up", "Down"):
+        for c in (ingles,):
+            assert ingles not in at.texto_falado("Ctrl+" + c).split()
+
+
+def test_teclas_de_edicao_do_windows():
+    """Num campo editavel, Control Shift setas e as outras teclas de edicao
+    valem como no Windows, nao como atalho do TeleZapp."""
+    from telezapp.nucleo import atalhos as at
+    for c in ("Ctrl+Shift+Left", "Ctrl+Shift+Right", "Shift+End",
+              "Ctrl+Backspace", "Ctrl+Home", "Ctrl+V"):
+        assert at.e_de_edicao(c), c
+    for c in ("Ctrl+Shift+P", "Alt+Left", "Ctrl+Alt+Right", "F5", None):
+        assert not at.e_de_edicao(c), c
+
+
+def test_texto_dos_atalhos_mostra_o_que_esta_em_uso_agora():
+    r = at.Registro()
+    r.registrar("a", "&Alfa\tCtrl+1", "Mensagens", "Ctrl+1")
+    r.registrar("b", "&Beta", "Mensagens")
+    r.registrar("c", "&Gama", "Conversas", "Ctrl+3")
+    texto = at.texto_dos_atalhos(r)
+    assert "MENSAGENS\nAlfa: Ctrl+1\n" in texto
+    assert "CONVERSAS\nGama: Ctrl+3" in texto
+    assert "Beta" not in texto                 # sem tecla, fica de fora
+    r.definir_personalizados({"a": "Ctrl+9", "c": ""})
+    texto = at.texto_dos_atalhos(r)
+    assert "Alfa: Ctrl+9" in texto and "Ctrl+1" not in texto
+    assert "Gama" not in texto                 # ficou sem tecla

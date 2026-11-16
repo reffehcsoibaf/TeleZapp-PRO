@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeleZapp: WhatsApp e Telegram para leitores de tela</title>
+<meta name="description" content="Aplicativo gratuito e de código aberto para conversar pelo WhatsApp e pelo Telegram na mesma janela, feito para quem usa leitor de tela no Windows.">
+<style>
+:root {
+  --fundo: #ffffff;
+  --texto: #1b1f24;
+  --suave: #4a5460;
+  --linha: #d3d9e0;
+  --destaque: #0b5cad;
+  --destaque-texto: #ffffff;
+  --aviso-fundo: #fff4d6;
+  --aviso-borda: #b57d00;
+  --card: #f4f6f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #12161b;
+    --texto: #e8ecf1;
+    --suave: #aab4bf;
+    --linha: #2c353f;
+    --destaque: #6cb2ff;
+    --destaque-texto: #0a1420;
+    --aviso-fundo: #2d2610;
+    --aviso-borda: #d9a400;
+    --card: #1a2027;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 1.0625rem/1.6 system-ui, "Segoe UI", sans-serif;
+}
+a { color: var(--destaque); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--destaque); outline-offset: 3px; }
+.conteudo { max-width: 46rem; margin: 0 auto; padding: 0 1rem; }
+header { padding: 2.5rem 0 1rem; }
+h1 { font-size: 2.2rem; line-height: 1.2; margin: 0 0 .5rem; }
+h2 { font-size: 1.4rem; margin: 2.2rem 0 .6rem; }
+.lema { font-size: 1.2rem; color: var(--suave); margin: 0; }
+.baixar { margin: 1.6rem 0 .4rem; display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+.botao {
+  display: inline-block;
+  background: var(--destaque);
+  color: var(--destaque-texto);
+  font-weight: 700;
+  text-decoration: none;
+  padding: .85rem 1.4rem;
+  border-radius: .5rem;
+}
+.botao:hover { filter: brightness(1.1); }
+.secundario { background: transparent; color: var(--destaque); border: 2px solid var(--destaque); }
+.nota { color: var(--suave); font-size: .95rem; margin: .3rem 0 0; }
+.verificar { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; margin: .8rem 0; }
+.verificar label { flex-basis: 100%; font-weight: 700; }
+button.botao { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+.resultado { font-weight: 700; margin: .8rem 0; }
+.resultado:empty { display: none; }
+.aviso {
+  background: var(--aviso-fundo);
+  border-left: 5px solid var(--aviso-borda);
+  padding: .8rem 1rem;
+  border-radius: .3rem;
+  margin: 1.4rem 0;
+}
+ul, ol { padding-left: 1.4rem; }
+li { margin: .35rem 0; }
+.cartoes { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); list-style: none; padding: 0; }
+.cartoes li { background: var(--card); border: 1px solid var(--linha); border-radius: .5rem; padding: .8rem 1rem; margin: 0; }
+.cartoes strong { display: block; }
+code { background: var(--card); padding: .1rem .35rem; border-radius: .25rem; word-break: break-all; }
+footer { border-top: 1px solid var(--linha); margin-top: 3rem; padding: 1.5rem 0 3rem; color: var(--suave); font-size: .95rem; }
+</style>
+</head>
+<body>
+<header>
+  <div class="conteudo">
+    <h1>TeleZapp</h1>
+    <p class="lema">Aplicativo para conversar pelo WhatsApp e pelo Telegram na mesma janela, feito para quem usa leitor de tela no Windows.</p>
+  </div>
+</header>
+<main class="conteudo">
+  <section aria-labelledby="baixar">
+    <h2 id="baixar">Baixar</h2>
+    <div class="baixar">
+      <a class="botao" id="botao-baixar" href="https://github.com/reffehcsoibaf/TeleZapp-PRO/releases">Baixar o instalador</a>
+      <a class="botao secundario" href="https://github.com/reffehcsoibaf/TeleZapp-PRO/releases">Todas as versões</a>
+    </div>
+    <p class="nota" id="versao" role="status">Para Windows 10 ou 11. Gratuito, sem anúncios.</p>
+    <p class="nota">Esta página, as versões publicadas no GitHub do projeto e as atualizações feitas pelo próprio programa são os canais oficiais. Cópias obtidas fora deles não são de responsabilidade de Fábio Scheffer Moraes. Em Ajuda, Sobre, o programa diz se a cópia confere com a versão publicada.</p>
+    <div class="aviso" role="note">
+      <strong>Software experimental.</strong> O TeleZapp está em desenvolvimento e pode ter erros, inclusive em mensagens e conversas. Use por sua conta e risco. Não é um produto oficial do WhatsApp nem do Telegram.
+    </div>
+  </section>
+
+  <section aria-labelledby="como">
+    <h2 id="como">Como instalar</h2>
+    <ol>
+      <li>Baixe o <code>TeleZapp.exe</code> e abra.</li>
+      <li>A tela de boas-vindas tem os botões <strong>Instalar</strong> (sem precisar de administrador), <strong>Criar cópia portátil</strong> (para levar num pendrive), <strong>Guia de uso</strong> e <strong>Fechar</strong>.</li>
+      <li>Para atualizar, use <em>Ajuda, Verificar atualizações</em> dentro do programa: ele baixa a versão nova, confere o arquivo e se reabre atualizado, mantendo os seus dados.</li>
+    </ol>
+    <p>Na página de cada versão há também o <code>TeleZapp.zip</code>, a pasta do programa pronta para extrair, que o próprio TeleZapp usa para se atualizar, e o código de conferência SHA-256 dele.</p>
+  </section>
+
+  <section aria-labelledby="verificar">
+    <h2 id="verificar">Verificar um arquivo</h2>
+    <p>Recebeu o TeleZapp de outra pessoa ou de outro site? Escolha o arquivo aqui para saber se é o que foi publicado. Serve para o instalador <code>TeleZapp.exe</code>, para o <code>TeleZapp.zip</code> e para o <code>TeleZapp.exe</code> da pasta do programa instalado. O arquivo não é enviado a lugar nenhum: a conferência acontece no seu navegador.</p>
+    <p>O TeleZapp oficial funciona no Windows 10 ou 11 e não é distribuído em contêiner. Uma cópia que rode em Windows mais antigo ou que venha nesse formato não foi feita nem verificada pelo autor. Use esta seção antes de executar.</p>
+    <p>Confira se está mesmo em <code>github.com/reffehcsoibaf/TeleZapp-PRO</code>, porque um site falso poderia dizer que qualquer arquivo é oficial.</p>
+    <form class="verificar" id="form-verificar">
+      <label for="arquivo-verificar">Arquivo a verificar</label>
+      <input type="file" id="arquivo-verificar" accept=".exe,.zip" required>
+      <button type="submit" class="botao" id="botao-verificar">Verificar</button>
+    </form>
+    <p class="resultado" id="resultado-verificar" role="status"></p>
+    <p class="nota">Na pasta instalada, só o <code>TeleZapp.exe</code> é conferido aqui. A conferência de todos os arquivos fica em Ajuda, Sobre, dentro do programa.</p>
+  </section>
+
+  <section aria-labelledby="recursos">
+    <h2 id="recursos">O que ele faz</h2>
+    <ul class="cartoes">
+      <li><strong>WhatsApp e Telegram, uma lista só</strong>Todas as suas contas dos dois serviços juntas numa lista, com filtros.</li>
+      <li><strong>Mensagens completas</strong>Texto, fotos, vídeos, áudios, figurinhas, documentos, reações e emojis.</li>
+      <li><strong>Status e histórias</strong>Ver, responder, curtir e postar.</li>
+      <li><strong>Feito para leitores de tela</strong>Controles nativos do Windows, avisos falados e sons para cada evento.</li>
+      <li><strong>Inteligência artificial opcional</strong>Transcreve áudios, descreve imagens e vídeos e ajuda com o texto (corrigir, redigir, traduzir e resumir), com a sua chave.</li>
+      <li><strong>Chamadas de voz</strong>Faz e atende chamadas de voz no Telegram e no WhatsApp, com microfone e saída de som à sua escolha.</li>
+      <li><strong>Backup e portátil</strong>Faça backup dos seus dados e leve o programa numa pasta.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="mais">
+    <h2 id="mais">Mais informações</h2>
+    <ul>
+      <li><a href="https://github.com/reffehcsoibaf/TeleZapp-PRO#readme">Leia o README</a>, com o que já foi comprovado e como rodar pelo código-fonte.</li>
+      <li>Para relatar um problema, sugerir algo ou tirar uma dúvida, use <em>Ajuda, Feedback</em> dentro do programa, sem precisar de conta em lugar nenhum. Quem prefere pode usar o <a href="https://github.com/reffehcsoibaf/TeleZapp-PRO/issues">GitHub</a>.</li>
+      <li><a href="https://github.com/reffehcsoibaf/TeleZapp-PRO">Código-fonte no GitHub</a>.</li>
+    </ul>
+  </section>
+</main>
+<footer>
+  <div class="conteudo">
+    Software livre sob a licença GPL versão 3 ou posterior. WhatsApp e Telegram são marcas dos seus donos; o TeleZapp não é afiliado a eles.
+  </div>
+</footer>
+<script>
+// Aponta o botão para o zip da versão mais nova, inclusive pré-lançamentos
+// (o endereço /releases/latest ignora pré-lançamentos). Sem JavaScript ou sem
+// resposta do GitHub, o botão leva à lista de versões.
+(function () {
+  var botao = document.getElementById("botao-baixar");
+  var aviso = document.getElementById("versao");
+  fetch("https://api.github.com/repos/reffehcsoibaf/TeleZapp-PRO/releases?per_page=15",
+        { headers: { Accept: "application/vnd.github+json" } })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+    .then(function (lista) {
+      var melhor = null, chave = null;
+      lista.forEach(function (r) {
+        var v = String(r.tag_name || "").replace(/^[vV]/, "");
+        if (r.draft || !/^\d{4}\.\d{1,2}\.\d{1,2}\.\d+$/.test(v)) { return; }
+        var k = v.split(".").map(Number), maior = !chave;
+        for (var i = 0; chave && i < 4; i++) {
+          if (k[i] !== chave[i]) { maior = k[i] > chave[i]; break; }
+        }
+        if (maior) { melhor = { v: v, r: r }; chave = k; }
+      });
+      if (!melhor) { return; }
+      var zip = (melhor.r.assets || []).filter(function (a) {
+        return a.name === "TeleZapp.exe";
+      })[0];
+      botao.textContent = "Baixar o instalador do TeleZapp " + melhor.v;
+      botao.href = zip ? zip.browser_download_url : melhor.r.html_url;
+      aviso.textContent = "Versão mais recente: " + melhor.v +
+        (melhor.r.prerelease ? " (pré-lançamento)" : "") +
+        (zip ? ", " + Math.round(zip.size / 1048576) + " MB" : "") +
+        ". Para Windows 10 ou 11. Gratuito, sem anúncios.";
+    })
+    .catch(function () {});
+})();
+
+// Verificar um arquivo: o navegador calcula o SHA-256 e compara com os valores
+// das notas de cada versão publicada no GitHub. Nada sai deste computador.
+(function () {
+  var form = document.getElementById("form-verificar");
+  var entrada = document.getElementById("arquivo-verificar");
+  var botao = document.getElementById("botao-verificar");
+  var saida = document.getElementById("resultado-verificar");
+  var NOMES = { "zip": "o TeleZapp.zip", "instalador": "o instalador",
+                "programa instalado": "o programa instalado" };
+
+  function publicados() {
+    return fetch("https://api.github.com/repos/reffehcsoibaf/TeleZapp-PRO/releases?per_page=100",
+                 { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (lista) {
+        var achados = {};
+        lista.forEach(function (r) {
+          if (r.draft) { return; }
+          var re = /SHA-256 do (zip|instalador|programa instalado)[^:\n]*: `([0-9a-f]{64})`/g;
+          var m;
+          while ((m = re.exec(r.body || ""))) {
+            achados[m[2]] = { oque: NOMES[m[1]], versao: r.tag_name,
+                              data: r.published_at };
+          }
+        });
+        return achados;
+      });
+  }
+
+  function emHexa(buffer) {
+    return Array.prototype.map.call(new Uint8Array(buffer), function (b) {
+      return ("0" + b.toString(16)).slice(-2);
+    }).join("");
+  }
+
+  function mostrar(texto) {
+    saida.textContent = texto;
+    botao.disabled = false;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var arquivo = entrada.files[0];
+    if (!arquivo) { return; }
+    if (!window.crypto || !crypto.subtle) {
+      mostrar("Este navegador não consegue fazer a conferência. Baixe o TeleZapp pelo botão desta página.");
+      return;
+    }
+    botao.disabled = true;
+    saida.textContent = "Conferindo o arquivo, aguarde...";
+    arquivo.arrayBuffer()
+      .then(function (dados) { return crypto.subtle.digest("SHA-256", dados); })
+      .then(function (resumo) {
+        var hash = emHexa(resumo);
+        return publicados().then(function (achados) {
+          var a = achados[hash];
+          if (a) {
+            mostrar("Arquivo oficial: é " + a.oque + " da versão " + a.versao +
+                    ", publicada em " + new Date(a.data).toLocaleDateString("pt-BR") + ".");
+          } else {
+            mostrar("Este arquivo não confere com nenhuma versão registrada. " +
+                    "Não o execute: baixe o TeleZapp pelo botão desta página.");
+          }
+        }, function () {
+          mostrar("Não consegui consultar as versões publicadas no GitHub. " +
+                  "Tente de novo daqui a uma hora, ou baixe o TeleZapp pelo botão desta página.");
+        });
+      })
+      .catch(function () {
+        mostrar("Não consegui ler este arquivo. Baixe o TeleZapp pelo botão desta página.");
+      });
+  });
+})();
+</script>
+</body>
+</html>

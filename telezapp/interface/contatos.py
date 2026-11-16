@@ -1,0 +1,580 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Fábio Scheffer Moraes
+"""Agenda de contatos do TeleZapp PRO: ver, adicionar, editar e remover.
+
+Os contatos ficam so no TeleZapp PRO (nao vao para o celular nem para a conta).
+O nome dado aqui vale nas conversas, nos autores e nas mencoes. A janela so
+desenha: quem guarda e o banco, e quem renomeia as conversas e quem chama
+(`ao_mudar`).
+"""
+import threading
+
+import wx
+
+from telezapp.interface import dialogos
+from telezapp.nucleo import enviar_contatos as ec
+from telezapp.nucleo import modelos as m
+from telezapp.nucleo import nova_mensagem as nm
+from telezapp.nucleo import trazer_contatos
+
+TELEFONE_DE_TESTE = "+5500000000000"
+
+
+def rotulo_contato(c, servico, conta):
+    """'Nome, +telefone, WhatsApp (conta)'."""
+    _, _, nome, telefone = c
+    partes = [nome] + ([telefone] if telefone else [])
+    return "%s, %s (%s)" % (", ".join(partes), servico, conta)
+
+
+def avisar_conta(prov, conversa_id, nome, telefone, falar):
+    """Conta ao servico o nome dado a um contato (em segundo plano), para a
+    conta reconhecer a pessoa. So fala se o servico aceitou ou se tentou e
+    nao deu; provedor que nao sabe fazer isso nao diz nada."""
+    if prov is None or not hasattr(prov, "salvar_contato"):
+        return
+
+    def enviar():
+        try:
+            ok = bool(prov.salvar_contato(conversa_id, nome, telefone))
+        except Exception:
+            ok = False
+        if ok:
+            wx.CallAfter(falar, "Contato %s salvo também na conta." % nome)
+        elif getattr(prov, "ACEITA_CONTATOS", False):
+            wx.CallAfter(falar, "Não consegui avisar a conta. O nome ficou "
+                                "só no TeleZapp PRO.")
+    threading.Thread(target=enviar, daemon=True,
+                     name="avisar-contato").start()
+
+
+class DialogoContato(wx.Dialog):
+    """Conta (so ao adicionar), nome e telefone de um contato."""
+
+    def __init__(self, pai, titulo, contas, nome="", telefone="",
+                 travar_conta=False, pedir_telefone=True,
+                 rotulo_telefone="Telefone com DDD (opcional ao editar)"):
+        """contas: [(conta_id, rotulo)]."""
+        super().__init__(pai, title=titulo, style=wx.DEFAULT_DIALOG_STYLE)
+        self.contas = contas
+        lay = wx.BoxSizer(wx.VERTICAL)
+
+        def campo(rotulo, criar, expandir=0):
+            # o rotulo nasce ANTES do controle: o leitor de tela usa o texto
+            # que vem logo antes do controle como o nome dele
+            lay.Add(wx.StaticText(self, label=rotulo), 0,
+                    wx.LEFT | wx.RIGHT | wx.TOP, 10)
+            ctrl = criar()
+            lay.Add(ctrl, expandir, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+            return ctrl
+        self.conta = campo("Conta", lambda: wx.Choice(
+            self, choices=[r for _, r in contas], name="Conta"))
+        self.conta.SetSelection(0)
+        if travar_conta or len(contas) == 1:
+            self.conta.Enable(False)
+        self.nome = campo("Nome", lambda: wx.TextCtrl(
+            self, value=nome, name="Nome", size=(380, -1)))
+        self.telefone = None
+        if pedir_telefone:
+            self.telefone = campo(
+                rotulo_telefone,
+                lambda: wx.TextCtrl(self, value=telefone,
+                                    name="Telefone com DDD",
+                                    size=(380, -1)))
+        lay.Add(self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL), 0,
+                wx.ALL | wx.ALIGN_RIGHT, 10)
+        self.SetSizerAndFit(lay)
+        self.CentreOnParent()
+        self.nome.SetFocus()
+
+    def escolhido(self):
+        """(conta_id, nome, telefone digitado)."""
+        i = max(self.conta.GetSelection(), 0)
+        tel = self.telefone.GetValue().strip() if self.telefone else ""
+        return self.contas[i][0], self.nome.GetValue().strip(), tel
+
+
+def adicionar_contato(pai, banco, contas, falar):
+    """Pergunta conta, nome e telefone e guarda o contato. Devolve
+    ((conta_id, id), aviso) ou None se nao adicionou. So o WhatsApp acha
+    uma pessoa pelo telefone."""
+    aceitam = []
+    for conta_id, servico, nome in contas.lista():
+        prov = contas.provedor(conta_id)
+        if prov is not None and prov.id_do_telefone(TELEFONE_DE_TESTE):
+            aceitam.append((conta_id, "%s (%s)" % (
+                m.SERVICOS.get(servico, servico), nome)))
+    if not aceitam:
+        wx.MessageBox(
+            "Adicionar por telefone só funciona no WhatsApp. Para um "
+            "contato do Telegram, abra a conversa com a pessoa e use "
+            "Contatos, Salvar a pessoa desta conversa.",
+            "Contatos", wx.OK | wx.ICON_INFORMATION, pai)
+        return None
+    dlg = DialogoContato(pai, "Adicionar contato", aceitam)
+    try:
+        if dlg.ShowModal() != wx.ID_OK:
+            return None
+        conta_id, nome, tel = dlg.escolhido()
+    finally:
+        dlg.Destroy()
+    telefone = m.normalizar_telefone(tel)
+    if not nome or not telefone:
+        wx.MessageBox("Informe o nome e um telefone válido, com DDD.",
+                      "Contatos", wx.OK | wx.ICON_WARNING, pai)
+        return None
+    id_, motivo = contas.provedor(conta_id).confirmar_telefone(telefone)
+    if not id_:
+        wx.MessageBox(
+            "%s Confira o número: no Brasil, o app já tentou com e sem o 9 "
+            "depois do DDD." % (motivo or "Não achei esse número."),
+            "Contatos", wx.OK | wx.ICON_WARNING, pai)
+        return None
+    # a forma registrada pode ser outra (Brasil sem o 9)
+    telefone = "+" + id_.split("@")[0]
+    banco.salvar_contato(conta_id, id_, nome, telefone)
+    avisar_conta(contas.provedor(conta_id), id_, nome, telefone, falar)
+    return (conta_id, id_), "Contato %s adicionado." % nome
+
+
+class GerenciadorContatos(wx.Dialog):
+    """Lista de contatos com Adicionar, Editar, Remover e Trazer."""
+
+    def __init__(self, pai, banco, contas, ao_mudar, falar,
+                 ocultar_duplicados=False, ao_ocultar=None,
+                 trazer_ao_abrir=True, ao_trazer_ao_abrir=None):
+        """contas: objeto com .lista() -> [(conta_id, servico, nome)] e
+        .provedor(conta_id); ao_mudar(): chamado depois de cada mudanca;
+        ao_ocultar(bool): guarda a escolha de ocultar os repetidos;
+        ao_trazer_ao_abrir(bool): guarda a escolha de obter os contatos das
+        contas ao abrir o TeleZapp PRO."""
+        super().__init__(pai, title="Contatos",
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self.banco, self.contas = banco, contas
+        self.ao_mudar, self.falar = ao_mudar, falar
+        self._itens = []
+        self.ao_ocultar = ao_ocultar
+        self.ao_trazer_ao_abrir = ao_trazer_ao_abrir
+        lay = wx.BoxSizer(wx.VERTICAL)
+        lay.Add(wx.StaticText(
+            self, label="Contatos do TeleZapp PRO. O nome vale nas conversas, "
+                        "autores e menções, só neste computador."), 0,
+                wx.ALL, 10)
+        lay.Add(wx.StaticText(self, label="&Buscar contato (nome ou telefone)"),
+                0, wx.LEFT | wx.RIGHT, 10)
+        self.busca = wx.TextCtrl(self, name="Buscar contato",
+                                 size=(520, -1))
+        lay.Add(self.busca, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.ocultar = wx.CheckBox(self, label="Ocultar contatos &duplicados")
+        self.ocultar.SetValue(bool(ocultar_duplicados))
+        lay.Add(self.ocultar, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.trazer = wx.CheckBox(
+            self, label="&Obter os contatos das contas ao abrir o TeleZapp PRO")
+        self.trazer.SetValue(bool(trazer_ao_abrir))
+        lay.Add(self.trazer, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        self.lista = wx.ListBox(self, name="Contatos", size=(520, 260))
+        lay.Add(self.lista, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        # selecao multipla (Control Espaco): Remover vale para os marcados
+        from telezapp.interface.marcas import Marcas
+        self.marcas = Marcas(self.lista, falar, chave=lambda c: (c[0], c[1]),
+                             dono=self)
+        linha = wx.BoxSizer(wx.HORIZONTAL)
+        self.botoes = {}
+        for chave, rotulo in (("add", "&Adicionar..."),
+                              ("editar", "&Editar..."),
+                              ("remover", "&Remover")):
+            b = wx.Button(self, label=rotulo)
+            self.botoes[chave] = b
+            linha.Add(b, 0, wx.RIGHT, 6)
+        fechar = wx.Button(self, wx.ID_CANCEL, "&Fechar")
+        linha.Add(fechar, 0)
+        lay.Add(linha, 0, wx.ALL, 10)
+        self.SetSizerAndFit(lay)
+        self.SetEscapeId(wx.ID_CANCEL)
+        self.CentreOnParent()
+        self.botoes["add"].Bind(wx.EVT_BUTTON, lambda e: self._adicionar())
+        self.botoes["editar"].Bind(wx.EVT_BUTTON, lambda e: self._editar())
+        self.botoes["remover"].Bind(wx.EVT_BUTTON, lambda e: self._remover())
+        self.lista.Bind(wx.EVT_LISTBOX_DCLICK, lambda e: self._editar())
+        self.busca.Bind(wx.EVT_TEXT, lambda e: self._preencher(
+            self._chave_selecionada()))
+        self.ocultar.Bind(wx.EVT_CHECKBOX, self._ao_ocultar)
+        self.trazer.Bind(wx.EVT_CHECKBOX, self._ao_trazer)
+        self.busca.Bind(wx.EVT_CHAR_HOOK, self._tecla_na_busca)
+        self.Bind(wx.EVT_CHAR_HOOK, self._tecla)
+        self._preencher()
+        self.busca.SetFocus()
+
+    # ------------------------------------------------------------ lista
+    def _contas_por_id(self):
+        return {c: (s, n) for c, s, n in self.contas.lista()}
+
+    def _chave_selecionada(self):
+        c = self._selecionado()
+        return (c[0], c[1]) if c else None
+
+    def _tecla(self, evt):
+        if not self.marcas.tecla(evt):
+            evt.Skip()
+
+    def _tecla_na_busca(self, evt):
+        """Seta para baixo na busca leva ao primeiro contato achado."""
+        if evt.GetKeyCode() == wx.WXK_DOWN and not evt.HasModifiers()                 and self._itens:
+            self.lista.SetFocus()
+            return
+        evt.Skip()
+
+    def _ao_ocultar(self, _evt=None):
+        if self.ao_ocultar is not None:
+            self.ao_ocultar(self.ocultar.GetValue())
+        self._preencher(self._chave_selecionada())
+        self.falar("Contatos duplicados %s." % (
+            "ocultos" if self.ocultar.GetValue() else "à mostra"))
+
+    def _casa_busca(self, c, busca):
+        digitos = "".join(ch for ch in busca if ch.isdigit())
+        return m.casa_busca(c[2], busca) or bool(
+            digitos and c[3] and digitos in c[3])
+
+    def _preencher(self, escolher=None):
+        por_id = self._contas_por_id()
+        todos = [c for c in self.banco.contatos() if c[0] in por_id]
+        busca = self.busca.GetValue().strip()
+        if self.ocultar.GetValue():
+            from telezapp.nucleo import nova_mensagem as nm
+            todos = nm.sem_duplicados(
+                todos, lambda c: (c[0], c[1], c[2], c[3]),
+                entre_contas=True)
+        self._itens = [c for c in todos
+                       if not busca or self._casa_busca(c, busca)]
+        self.lista.Set(self.marcas.rotulos([
+            rotulo_contato(c, m.SERVICOS.get(por_id[c[0]][0], ""),
+                           por_id[c[0]][1]) for c in self._itens], self._itens)
+            or ["Nenhum contato encontrado" if todos
+                else "Nenhum contato ainda"])
+        if self._itens:
+            i = 0
+            if escolher:
+                for k, c in enumerate(self._itens):
+                    if (c[0], c[1]) == escolher:
+                        i = k
+            self.lista.SetSelection(i)
+
+    def _selecionado(self):
+        i = self.lista.GetSelection()
+        return self._itens[i] if 0 <= i < len(self._itens) else None
+
+    # --------------------------------------------------------- acoes
+    def _adicionar(self):
+        achado = adicionar_contato(self, self.banco, self.contas, self.falar)
+        if achado is not None:
+            self._mudou(achado[0], achado[1])
+
+
+    def _editar(self):
+        c = self._selecionado()
+        if c is None:
+            return
+        por_id = self._contas_por_id()
+        servico, conta_nome = por_id[c[0]]
+        dlg = DialogoContato(
+            self, "Editar contato",
+            [(c[0], "%s (%s)" % (m.SERVICOS.get(servico, servico),
+                                  conta_nome))],
+            nome=c[2], telefone=c[3], travar_conta=True)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            _, nome, tel = dlg.escolhido()
+        finally:
+            dlg.Destroy()
+        if not nome:
+            wx.MessageBox("O nome não pode ficar vazio.", "Contatos",
+                          wx.OK | wx.ICON_WARNING, self)
+            return
+        telefone = m.normalizar_telefone(tel) or c[3]
+        self.banco.salvar_contato(c[0], c[1], nome, telefone)
+        self._mudou((c[0], c[1]), "Contato %s salvo." % nome)
+        avisar_conta(self.contas.provedor(c[0]), c[1], nome, telefone,
+                     self.falar)
+
+    def _remover(self):
+        escolhidos = self.marcas.escolhidos()
+        if not escolhidos:
+            return
+        quem = escolhidos[0][2] if len(escolhidos) == 1 else             "os %d contatos marcados" % len(escolhidos)
+        if dialogos.perguntar("confirmar_remover_pessoas", "Remover %s dos contatos do TeleZapp PRO? A pessoa "
+                         "continua na conta; só o nome dado aqui some."
+                         % quem, "Contatos",
+                         wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+                         self) != wx.YES:
+            return
+        for c in escolhidos:
+            self.banco.remover_contato(c[0], c[1])
+        self.marcas.esquecer(escolhidos)
+        self._mudou(None, "Contato %s removido." % escolhidos[0][2]
+                    if len(escolhidos) == 1 else
+                    "%d contatos removidos." % len(escolhidos))
+
+    def _ao_trazer(self, _evt=None):
+        """Marcar guarda a escolha e traz os contatos agora, para a pessoa
+        ver o resultado sem esperar a proxima abertura."""
+        marcada = self.trazer.GetValue()
+        if self.ao_trazer_ao_abrir is not None:
+            self.ao_trazer_ao_abrir(marcada)
+        if not marcada:
+            self.falar("Os contatos das contas não serão obtidos ao abrir "
+                       "o TeleZapp PRO.")
+            return
+        novos = 0
+        for conta_id, servico, _ in self.contas.lista():
+            novos += trazer_contatos.salvar(
+                self.banco, conta_id,
+                trazer_contatos.ler(self.contas.provedor(conta_id)))
+        self._mudou(None, "%d contatos trazidos das contas." % novos if novos
+                    else "Nenhum contato novo para trazer.")
+        self.trazer.SetFocus()
+
+    def _mudou(self, escolher, aviso):
+        self._preencher(escolher)
+        self.ao_mudar()
+        self.falar(aviso)
+        self.lista.SetFocus()
+
+
+def dialogo_salvar_pessoa(pai, contas, nome, telefone=""):
+    """Pergunta nome e telefone ao salvar a pessoa de uma conversa; devolve
+    (nome, telefone) ou None."""
+    dlg = DialogoContato(pai, "Salvar contato", contas, nome=nome,
+                         telefone=telefone, travar_conta=True)
+    try:
+        if dlg.ShowModal() != wx.ID_OK:
+            return None
+        _, nome, tel = dlg.escolhido()
+    finally:
+        dlg.Destroy()
+    return (nome, m.normalizar_telefone(tel) or "") if nome else None
+
+
+class DialogoEscolherPessoa(wx.Dialog):
+    """Conta (so se houver mais de uma) e destinatario, para a Nova mensagem
+    e a Nova chamada. Abaixo do campo Para, uma lista com os contatos e
+    conversas que casam com o que foi digitado (vazio = todos). Nao tem o
+    texto: a mensagem se escreve depois, na conversa que se abre."""
+
+    LIMITE_LISTA = 200
+
+    def __init__(self, pai, contas, buscar, titulo="Nova mensagem",
+                 com_modo=False):
+        """contas: [(conta_id, rotulo)] das contas conectadas; buscar(
+        conta_id, texto) -> [(id, nome, telefone)]; com `com_modo`, a janela
+        tem a caixa Mostrar e chama buscar(conta_id, texto, modo)."""
+        super().__init__(pai, title=titulo,
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self.contas, self.buscar = contas, buscar
+        self._achados = []
+        lay = wx.BoxSizer(wx.VERTICAL)
+
+        def campo(rotulo, criar, expandir=0):
+            # o rotulo nasce ANTES do controle: o leitor de tela usa o texto
+            # que vem logo antes do controle como o nome dele
+            lay.Add(wx.StaticText(self, label=rotulo), 0,
+                    wx.LEFT | wx.RIGHT | wx.TOP, 10)
+            ctrl = criar()
+            lay.Add(ctrl, expandir, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+            return ctrl
+        self.conta = None
+        if len(contas) > 1:
+            self.conta = campo("Pela conta", lambda: wx.Choice(
+                self, choices=[r for _, r in contas], name="Pela conta"))
+            self.conta.SetSelection(0)
+            self.conta.Bind(wx.EVT_CHOICE, lambda e: self._atualizar())
+        self.modo = None
+        if com_modo:
+            from telezapp.nucleo import nova_mensagem as nm
+            self.modo = campo("Mostrar", lambda: wx.Choice(
+                self, choices=[r for _, r in nm.MODOS], name="Mostrar"))
+            self.modo.SetSelection(0)
+            self.modo.Bind(wx.EVT_CHOICE, lambda e: self._atualizar())
+        self.para = campo(
+            "Para (digite para buscar nos contatos e conversas, ou um "
+            "telefone no formato internacional, como +55 51 99999 8888 "
+            "(no Brasil, só o DDD e o número também serve), ou @usuário)",
+            lambda: wx.TextCtrl(self, name="Para", size=(420, -1),
+                                style=wx.TE_PROCESS_ENTER))
+        self.para.Bind(wx.EVT_TEXT, lambda e: self._atualizar())
+        self.para.Bind(wx.EVT_TEXT_ENTER, lambda e: self._ao_enter_no_para())
+        self.lista = campo(
+            "Encontrados (Enter escolhe)",
+            lambda: wx.ListBox(self, name="Encontrados",
+                               size=(420, 160)), 1)
+        self.lista.Bind(wx.EVT_LISTBOX_DCLICK, lambda e: self._escolher())
+        lay.Add(self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL), 0,
+                wx.ALL | wx.ALIGN_RIGHT, 10)
+        self.SetSizerAndFit(lay)
+        self.CentreOnParent()
+        self._atualizar()
+        # com mais de uma conta, o foco comeca na escolha do servico / conta
+        (self.conta or self.para).SetFocus()
+
+    def _conta_id(self):
+        i = max(self.conta.GetSelection(), 0) if self.conta else 0
+        return self.contas[i][0]
+
+    def _atualizar(self):
+        from telezapp.nucleo import nova_mensagem as nm
+        if self.modo is not None:
+            achados = self.buscar(
+                self._conta_id(), self.para.GetValue(),
+                nm.MODOS[max(self.modo.GetSelection(), 0)][0])
+        else:
+            achados = self.buscar(self._conta_id(), self.para.GetValue())
+        self._achados = achados[:self.LIMITE_LISTA]
+        self.lista.Set([nm.rotulo(n, t) for _, n, t in self._achados]
+                       or ["Nada encontrado"])
+
+    def _selecionado(self):
+        i = self.lista.GetSelection()
+        return self._achados[i] if 0 <= i < len(self._achados) else None
+
+    def _ao_enter_no_para(self):
+        """Enter no campo Para: vai para a lista de contatos achados; sem
+        nenhum, vale o que foi digitado (telefone ou @usuario)."""
+        if self._achados:
+            self.lista.SetSelection(0)
+            self.lista.SetFocus()
+        elif self.para.GetValue().strip():
+            self.EndModal(wx.ID_OK)
+
+    def _escolher(self):
+        """Enter ou duplo clique na lista: escolhe a pessoa."""
+        if self._selecionado() is not None:
+            self.EndModal(wx.ID_OK)
+
+    def escolhido(self):
+        """(conta_id, destino, pessoa): pessoa e (id, nome) da lista, se uma
+        foi escolhida, senao None (vale o texto de Para)."""
+        sel = self._selecionado()
+        pessoa = (sel[0], sel[1]) if sel else None
+        destino = self.para.GetValue().strip() or (sel[1] if sel else "")
+        return self._conta_id(), destino, pessoa
+
+
+def dialogo_nova_mensagem(pai, contas, buscar, titulo="Nova mensagem",
+                          com_modo=False):
+    """(conta_id, destino, pessoa) ou None se cancelar ou deixar sem
+    destino. Serve a Nova mensagem e a Nova chamada."""
+    dlg = DialogoEscolherPessoa(pai, contas, buscar, titulo, com_modo)
+    try:
+        if dlg.ShowModal() != wx.ID_OK:
+            return None
+        conta_id, destino, pessoa = dlg.escolhido()
+    finally:
+        dlg.Destroy()
+    if destino or pessoa:
+        return conta_id, destino, pessoa
+    return None
+
+
+def dialogo_nova_chamada(pai, contas, buscar, video=False):
+    return dialogo_nova_mensagem(
+        pai, contas, buscar,
+        "Nova chamada de vídeo" if video else "Nova chamada")
+
+
+class DialogoEnviarContatos(wx.Dialog):
+    """Busca e lista da agenda com caixa de marcar, mais Digitar para quem nao
+    esta nela. As marcas sobrevivem a uma nova busca."""
+
+    def __init__(self, pai, itens, destino):
+        """itens: [(nome, telefone)]; destino: o nome da conversa."""
+        super().__init__(pai, title="Enviar contatos",
+                         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self.itens = list(itens)
+        self.marcados = []
+        self._mostrados = []
+        lay = wx.BoxSizer(wx.VERTICAL)
+        lay.Add(wx.StaticText(self, label=(
+            "Enviar contatos para %s. Digite para buscar e marque com Espaço "
+            "quem vai no envio." % destino)), 0, wx.ALL, 10)
+        lay.Add(wx.StaticText(self, label="&Buscar contato (nome ou telefone)"),
+                0, wx.LEFT | wx.RIGHT, 10)
+        self.busca = wx.TextCtrl(self, name="Buscar contato")
+        lay.Add(self.busca, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        lay.Add(wx.StaticText(self, label="Contatos (Espaço marca)"), 0,
+                wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        self.lista = wx.CheckListBox(self, name="Contatos", size=(460, 260))
+        lay.Add(self.lista, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        self.contagem = wx.StaticText(self, label="Nenhum marcado")
+        lay.Add(self.contagem, 0, wx.ALL, 10)
+        digitar = wx.Button(self, label="&Digitar um contato...")
+        lay.Add(digitar, 0, wx.LEFT | wx.RIGHT, 10)
+        botoes = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
+        self.FindWindowById(wx.ID_OK).SetLabel("&Enviar")
+        lay.Add(botoes, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
+        self.SetSizerAndFit(lay)
+        self.busca.Bind(wx.EVT_TEXT, lambda e: self._preencher())
+        self.lista.Bind(wx.EVT_CHECKLISTBOX, self._ao_marcar)
+        digitar.Bind(wx.EVT_BUTTON, lambda e: self._digitar())
+        self.Bind(wx.EVT_BUTTON, self._ok, id=wx.ID_OK)
+        self._preencher()
+        self.CentreOnParent()
+        self.busca.SetFocus()
+
+    def _preencher(self):
+        self._mostrados = ec.filtrar(self.itens, self.busca.GetValue())
+        self.lista.Set([nm.rotulo(*c) for c in self._mostrados])
+        for i, c in enumerate(self._mostrados):
+            self.lista.Check(i, c in self.marcados)
+        if self._mostrados:
+            self.lista.SetSelection(0)
+
+    def _marcar(self, contato, marcado):
+        if marcado and contato not in self.marcados:
+            self.marcados.append(contato)
+        elif not marcado and contato in self.marcados:
+            self.marcados.remove(contato)
+        n = len(self.marcados)
+        self.contagem.SetLabel("Nenhum marcado" if not n else
+                               "1 marcado" if n == 1 else "%d marcados" % n)
+
+    def _ao_marcar(self, evt):
+        i = evt.GetInt()
+        self._marcar(self._mostrados[i], self.lista.IsChecked(i))
+
+    def _digitar(self):
+        """Nome e telefone de quem nao esta na agenda. Vai so neste envio: nao
+        entra nos contatos."""
+        dlg = DialogoContato(self, "Digitar um contato", [(None, "Este envio")],
+                             travar_conta=True,
+                             rotulo_telefone="Telefone com DDD")
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            _, nome, tel = dlg.escolhido()
+        finally:
+            dlg.Destroy()
+        telefone = m.normalizar_telefone(tel)
+        if not nome or not telefone:
+            wx.MessageBox("Informe o nome e um telefone válido, com DDD.",
+                          "Enviar contatos", wx.OK | wx.ICON_WARNING, self)
+            return
+        contato = (nome, telefone)
+        if contato not in self.itens:
+            self.itens.append(contato)
+        self._marcar(contato, True)
+        self.busca.SetValue("")
+        self._preencher()
+        self.lista.SetSelection(self._mostrados.index(contato))
+        self.lista.SetFocus()
+
+    def _ok(self, evt):
+        if not self.marcados:
+            wx.MessageBox("Marque pelo menos um contato.", "Enviar contatos",
+                          wx.OK | wx.ICON_WARNING, self)
+            return
+        evt.Skip()
+
+    def escolhidos(self):
+        """[(nome, telefone)] marcados, na ordem em que foram marcados."""
+        return list(self.marcados)
