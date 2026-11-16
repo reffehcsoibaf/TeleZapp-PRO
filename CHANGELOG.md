@@ -7,6 +7,10 @@ Antes de escrever aqui, confira a versão em vigor: `git fetch --tags` e
 `gh release list -L 3` (a Latest é a publicada). O que veio depois dela vai em
 "Próxima versão (ainda sem número)".
 
+## 2026.11.16.2
+
+Sem mudança de código além do número: serve para testar a atualização da 2026.11.16.1 pela 2026.11.16.2 (baixar o zip, conferir o SHA-256, trocar a pasta).
+
 ## 2026.11.16.1
 
 Textos sem público único: tela de abertura, Sobre, guia (Primeiros passos), README, site, descrição do protocolo no Windows e aviso das notas da Release deixam de dizer "feito para leitores de tela" e "software experimental, use por sua conta e risco"; ficam "pensado para todas as pessoas" e o aviso de que não é produto oficial do WhatsApp nem do Telegram. As opções do modo "Para leitor de tela" continuam, pois são recursos.
