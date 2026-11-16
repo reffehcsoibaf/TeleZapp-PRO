@@ -83,8 +83,7 @@ def registrar(linha=None, base=CHAVE_APP, reg=None):
     try:
         _gravar(reg, capacidades, {
             "ApplicationName": NOME,
-            "ApplicationDescription": "Mensagens do WhatsApp e do Telegram, "
-            "feito para leitores de tela."})
+            "ApplicationDescription": "Mensagens do WhatsApp e do Telegram."})
         _gravar(reg, capacidades + r"\URLAssociations", {
             p: _classe(p) for p in PROTOCOLOS})
         for protocolo, servico in PROTOCOLOS.items():

@@ -485,7 +485,7 @@ OPCOES = (
           "apagado depois de marcar; o que já saiu não volta."),
     Opcao("verificar_atualizacoes",
           "Avisar quando houver versão nova do TeleZapp PRO", "Atualizações",
-          False,   # PRO: o repositorio consultado e o do TeleZapp original
+          True,
           "Ao abrir, consulta as versões publicadas no GitHub. Sem versão "
           "nova, não diz nada. Havendo, abre a janela com as novidades e você "
           "escolhe se instala. Se responder Não, o TeleZapp PRO pergunta se você "
@@ -497,7 +497,7 @@ OPCOES = (
           "consulta quando você pedir, em Ajuda, Verificar atualizações."),
     Opcao("atualizacoes_periodicas",
           "Buscar atualizações periodicamente com o TeleZapp PRO aberto",
-          "Atualizações", False,
+          "Atualizações", True,
           "Além de consultar ao abrir, volta a consultar de tempos em tempos "
           "enquanto o TeleZapp PRO estiver aberto, mesmo em segundo plano. As "
           "regras são as mesmas: sem versão nova, não diz nada. Em segundo "

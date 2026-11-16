@@ -12184,8 +12184,9 @@ class Janela(wx.Frame):
         conferida = copia_oficial.TEXTOS_DO_ESTADO.get(
             self._copia_conferida, "Ainda estou conferindo esta cópia.")
         wx.MessageBox(
-            "%s %s\n%s\nCliente de WhatsApp e Telegram feito para leitores "
-            "de tela.\nSoftware experimental: use por sua conta e risco.\n"
+            "%s %s\n%s\nCliente de WhatsApp e Telegram pensado para todas "
+            "as pessoas.\nNão é um produto oficial do WhatsApp nem do "
+            "Telegram.\n"
             "Software livre sob a licença GPL versão 3 ou "
             "posterior.\n%s\nDados guardados em: %s" % (
                 NOME, VERSAO, conferida, copia_oficial.AVISO_CANAIS,

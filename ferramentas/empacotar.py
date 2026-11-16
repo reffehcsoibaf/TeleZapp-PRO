@@ -106,8 +106,8 @@ def _montar(so_programa=False):
                              "TeleZapp.spec"), programa,
                 os.path.join(TRABALHO, "work-programa"),
                 {"TELEZAPP_VERSAO": arquivo_de_versao(
-                    TRABALHO, "TeleZapp: WhatsApp e Telegram para leitores "
-                    "de tela", "TeleZapp PRO.exe")})
+                    TRABALHO, "TeleZapp PRO: WhatsApp e Telegram na mesma "
+                    "janela", "TeleZapp PRO.exe")})
     if so_programa:
         print("Pronto: %s" % os.path.join(programa, "TeleZapp PRO"))
         return

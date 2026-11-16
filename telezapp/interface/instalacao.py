@@ -234,13 +234,12 @@ def fluxo_criar_portatil(pai, pasta_inicial, fonte=None):
 
 TEXTO_DE_BOAS_VINDAS = (
     "O %s é a edição profissional do TeleZapp: conversa pelo WhatsApp e "
-    "pelo Telegram na mesma janela, feita para quem usa leitor de tela, e "
-    "traz o menu Comercial para acompanhar atendimentos e cadastros de "
-    "clientes. Tem mensagens, mídias, chamadas, status e histórias, várias "
-    "contas e inteligência artificial opcional para transcrever e "
-    "descrever.\n\n"
-    "Versão %s. Software experimental: use por sua conta e risco. Não é um "
-    "produto oficial do WhatsApp nem do Telegram.\n\n"
+    "pelo Telegram na mesma janela e traz o menu Comercial para acompanhar "
+    "atendimentos e cadastros de clientes. Tem mensagens, mídias, chamadas, "
+    "status e histórias, várias contas e inteligência artificial opcional "
+    "para transcrever e descrever. Foi pensado para todas as pessoas, com "
+    "teclado, mouse ou leitor de tela.\n\n"
+    "Versão %s. Não é um produto oficial do WhatsApp nem do Telegram.\n\n"
     "Instalar copia o programa para este computador e cria os atalhos. Uma "
     "cópia portátil leva o programa e os seus dados numa pasta, por exemplo "
     "para um pendrive. Você também pode usar sem instalar." % (NOME, VERSAO))

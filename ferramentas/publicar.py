@@ -13,8 +13,8 @@ ainda nao existe, monta a partir da pasta do programa) e deixa la:
     TeleZapp_PRO.zip.sha256   o hash para conferir o download
     consulta.txt          arquivo publico que cada copia baixa uma vez por
                           dia; os downloads dele dao a ideia de copias em uso
-    notas.md                       o texto da Release (aviso de software
-                                   experimental + novidades da versao)
+    notas.md                       o texto da Release (aviso de produto nao oficial
+                                   + novidades da versao)
 
 Nada vai para o GitHub sem o --publicar. Uso:
 
@@ -39,9 +39,8 @@ import zipfile
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AVISO = (
-    "> **Software experimental.** O TeleZapp PRO está em desenvolvimento e pode "
-    "ter erros, inclusive em mensagens e conversas. Use por sua conta e "
-    "risco. Não é um produto oficial do WhatsApp nem do Telegram. Os canais "
+    "> **Aviso.** O TeleZapp PRO não é um produto oficial do WhatsApp nem do "
+    "Telegram. Os canais "
     "oficiais são a página do projeto "
     "(https://github.com/reffehcsoibaf/TeleZapp-PRO), estas Releases e as "
     "atualizações feitas pelo próprio programa; cópias obtidas fora deles não "

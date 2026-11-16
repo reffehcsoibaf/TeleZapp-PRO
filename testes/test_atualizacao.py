@@ -103,7 +103,7 @@ def test_notas_da_release_trazem_aviso_novidades_e_hash():
     pub = _publicar()
     versao = pub.versao_atual()
     notas = pub.montar_notas(versao, "abc123", "TeleZapp-%s.zip" % versao)
-    assert "Software experimental" in notas and "abc123" in notas
+    assert "não é um produto oficial" in notas and "abc123" in notas
     assert "(Sem texto de novidades" not in notas
     assert "<li>" not in notas
 

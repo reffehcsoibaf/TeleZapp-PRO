@@ -1,5 +1,5 @@
 # Primeiros passos
-O TeleZapp PRO reúne o WhatsApp e o Telegram numa só janela do Windows, pensada para quem usa leitores de tela. Todos os controles são os do próprio Windows, sem telas desenhadas à mão, e por isso os leitores de tela os leem normalmente.
+O TeleZapp PRO reúne o WhatsApp e o Telegram numa só janela do Windows, pensada para todas as pessoas, com teclado, mouse ou leitor de tela. Todos os controles são os do próprio Windows, sem telas desenhadas à mão, e por isso funcionam bem com os recursos de acessibilidade do sistema, como os leitores de tela.
 
 Os avisos que o TeleZapp PRO fala por conta própria, como mensagem nova e resultado da inteligência artificial, são testados com o NVDA. Com outros leitores de tela, boa parte deles aparece na barra de situação.
 
@@ -11,7 +11,7 @@ Tab passa pelos controles da janela.
 F1 abre este guia. Nele, escolha o assunto com as setas e aperte Enter para ir ao texto. Esc fecha o guia.
 Shift+F1 mostra um resumo das teclas.
 
-O TeleZapp PRO é um software experimental, em desenvolvimento: pode ter erros, inclusive em mensagens e conversas. Use por sua conta e risco.
+O TeleZapp PRO está em evolução constante. Se encontrar um problema ou tiver uma sugestão, use Ajuda, Feedback.
 
 Versão {{versao}}. Software livre, licença GNU GPL versão 3 ou posterior. Desenvolvido por Fábio Scheffer Moraes. Site e downloads: {{site}}
 

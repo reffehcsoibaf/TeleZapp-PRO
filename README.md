@@ -1,7 +1,8 @@
 # TeleZapp
 
 Cliente desktop para Windows que reúne contas de **WhatsApp** e **Telegram** numa
-só janela, pensado desde o início para ser usado com **leitores de tela**.
+só janela, pensado para todas as pessoas, com acessibilidade desde o início
+(teclado, mouse e leitores de tela).
 
 > **Estado:** em desenvolvimento ativo (versões no formato `ano.mês.dia.dígito`,
 > a atual está em `telezapp/__init__.py`). Telegram e WhatsApp já funcionam
@@ -15,10 +16,8 @@ só janela, pensado desde o início para ser usado com **leitores de tela**.
 
 ## Aviso
 
-O TeleZapp é um software **experimental**, em desenvolvimento. Pode ter erros,
-inclusive em mensagens e conversas. Use por sua conta e risco. Não é um
-produto oficial do WhatsApp nem do Telegram, e a licença (GPL 3) não dá
-garantia.
+O TeleZapp PRO não é um produto oficial do WhatsApp nem do Telegram, e a
+licença (GPL 3) não dá garantia.
 
 Os canais oficiais são a [página do projeto](https://github.com/reffehcsoibaf/TeleZapp-PRO),
 as [Releases](https://github.com/reffehcsoibaf/TeleZapp-PRO/releases) deste
