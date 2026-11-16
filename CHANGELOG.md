@@ -7,6 +7,10 @@ Antes de escrever aqui, confira a versão em vigor: `git fetch --tags` e
 `gh release list -L 3` (a Latest é a publicada). O que veio depois dela vai em
 "Próxima versão (ainda sem número)".
 
+## 2026.11.16.3
+
+Corrigido: `Bancos` (a fachada que o programa usa) não tinha `pedidos_cwb`, `tirar_pedidos_cwb`, `guardar_pedido_cwb` nem `data_primeira_mensagem`, só o `Banco`. O "marcar como lida" pedido pelo CWB nunca era atendido e o log recebia "erro ao conferir os pedidos do CWB" a cada 15 s; a "Data do contato" da ficha criada a partir de uma conversa saía vazia. Com as contas em pastas separadas o CWB (que lê só o `telezapp.db` único) não tem pedidos a atender. Testes em `test_bancos.py`. O fluxo `pages.yml` passa a rodar só à mão: o repositório do PRO não tem GitHub Pages e o fluxo falhava a cada push.
+
 ## 2026.11.16.2
 
 Sem mudança de código além do número: serve para testar a atualização da 2026.11.16.1 pela 2026.11.16.2 (baixar o zip, conferir o SHA-256, trocar a pasta).

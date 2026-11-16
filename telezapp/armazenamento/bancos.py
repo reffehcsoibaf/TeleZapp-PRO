@@ -369,6 +369,29 @@ class Bancos:
         self._de(conta_id).tirar_apagar_pendente(conta_id, conversa_id,
                                                  mensagem_id)
 
+    def data_primeira_mensagem(self, conta_id, conversa_id):
+        return self._de(conta_id).data_primeira_mensagem(
+            conta_id, conversa_id)
+
+    # ------------------------------------------------- pedidos do CWB (PRO)
+    # O CWB le e escreve sempre o telezapp.db unico; com os dados separados
+    # por conta esse arquivo nao e o das contas, e nao ha pedido a atender.
+    def pedidos_cwb(self):
+        if config.contas_separadas():
+            return []
+        return self._de(None).pedidos_cwb()
+
+    def tirar_pedidos_cwb(self, ids):
+        if not config.contas_separadas():
+            self._de(None).tirar_pedidos_cwb(ids)
+
+    def guardar_pedido_cwb(self, conta_id, conversa_id, acao="marcar_lida",
+                           quando=None):
+        if config.contas_separadas():
+            return None
+        return self._de(None).guardar_pedido_cwb(conta_id, conversa_id, acao,
+                                                 quando)
+
     # ----------------------------------------------- mensagens agendadas
     def guardar_agendada(self, conta_id, conversa_id, texto, quando,
                          resposta_a="", mencoes="", anexo=""):

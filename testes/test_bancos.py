@@ -658,3 +658,30 @@ def test_o_layout_antigo_nao_depende_da_pasta_escolhida(cfg, tmp_path):
     assert config.pasta_do_layout_antigo() == config.pasta_dados()
     assert config.pasta_sessoes("t1") == os.path.join(config.pasta_dados(),
                                                       "sessoes")
+
+
+def test_pedidos_do_cwb_passam_pela_fachada(tmp_path, monkeypatch):
+    """O erro da 2026.11.16.1: a janela chamava pedidos_cwb no Bancos, que
+    nao tinha o metodo (so o Banco), e falhava a cada 15 s."""
+    monkeypatch.setenv("TELEZAPP_DADOS", str(tmp_path / "dados"))
+    c = config.Config()
+    c.set("contas_em_pastas", False)
+    monkeypatch.setattr(config, "_cfg_de_contas", c)
+    bancos = Bancos(c)
+    n = bancos.guardar_pedido_cwb("t1", "c1", "marcar_lida", quando=10.0)
+    assert [p["id"] for p in bancos.pedidos_cwb()] == [n]
+    assert bancos.pedidos_cwb()[0]["conversa_id"] == "c1"
+    bancos.tirar_pedidos_cwb([n])
+    assert bancos.pedidos_cwb() == []
+
+
+def test_pedidos_do_cwb_com_contas_separadas_nao_ha_o_que_atender(cfg):
+    bancos = Bancos(cfg)
+    assert bancos.pedidos_cwb() == []
+    assert bancos.guardar_pedido_cwb("t1", "c1") is None
+    bancos.tirar_pedidos_cwb([1])       # nao falha
+
+
+def test_data_da_primeira_mensagem_passa_pela_fachada(cfg):
+    bancos = Bancos(cfg)
+    assert bancos.data_primeira_mensagem("t1", "c1") is None

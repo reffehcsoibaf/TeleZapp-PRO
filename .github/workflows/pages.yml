@@ -1,10 +1,13 @@
-name: Página do TeleZapp
+name: Página do TeleZapp PRO
 
-# Publica a pasta site/ no GitHub Pages quando ela muda na branch main.
+# Publica a pasta site/ no GitHub Pages, SÓ quando mandado à mão (Actions,
+# Run workflow). O PRO ainda não tem página: antes de usar, ligue o Pages no
+# repositório (Settings, Pages, Source: GitHub Actions) e atualize o site/.
+# Para publicar a cada mudança em site/, volte o gatilho push:
+#   push:
+#     branches: [main]
+#     paths: ["site/**", ".github/workflows/pages.yml"]
 on:
-  push:
-    branches: [main]
-    paths: ["site/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:

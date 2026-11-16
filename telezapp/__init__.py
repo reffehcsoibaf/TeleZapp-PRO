@@ -10,7 +10,7 @@ import re
 NOME = "TeleZapp PRO"
 # ano.mes.dia.digito: o ultimo numero sobe quando sai mais de uma versao no
 # mesmo dia (2026.10.13.0, 2026.10.13.1...)
-VERSAO = "2026.11.16.2"
+VERSAO = "2026.11.16.3"
 SITE = "https://github.com/reffehcsoibaf/TeleZapp-PRO"
 
 
