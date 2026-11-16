@@ -39,7 +39,7 @@ import zipfile
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AVISO = (
-    "> **Software experimental.** O TeleZapp está em desenvolvimento e pode "
+    "> **Software experimental.** O TeleZapp PRO está em desenvolvimento e pode "
     "ter erros, inclusive em mensagens e conversas. Use por sua conta e "
     "risco. Não é um produto oficial do WhatsApp nem do Telegram. Os canais "
     "oficiais são a página do projeto "
