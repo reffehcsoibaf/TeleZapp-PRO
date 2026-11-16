@@ -30,11 +30,11 @@ deve dizer que foi modificada.
 ## Baixar
 
 As versões ficam em [Releases](https://github.com/reffehcsoibaf/TeleZapp-PRO/releases).
-Baixe o `TeleZapp.exe` e abra: a tela de boas-vindas tem os botões
+Baixe o `TeleZapp_PRO.exe` e abra: a tela de boas-vindas tem os botões
 Instalar, Criar cópia portátil, Guia de uso e Fechar. Os dados ficam em
 `%APPDATA%\TeleZapp` (na portátil, na pasta `dados` ao lado do programa).
 Em Ajuda, Verificar atualizações, o programa diz se há versão nova e se
-atualiza sozinho; para isso cada Release traz também o `TeleZapp.zip`.
+atualiza sozinho; para isso cada Release traz também o `TeleZapp_PRO.zip`.
 Quem mantém o projeto gera tudo com `python ferramentas\empacotar.py` e
 cria a Release com `python ferramentas\publicar.py`.
 

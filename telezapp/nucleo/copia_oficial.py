@@ -21,8 +21,8 @@ from telezapp.nucleo.atualizacao import abrir_url
 
 log = logging.getLogger("telezapp.copia_oficial")
 
-ARQUIVO_DA_LISTA = "TeleZapp.conferencia.txt"
-NOME_DO_INSTALADOR = "instalador/TeleZapp.exe"
+ARQUIVO_DA_LISTA = "TeleZapp_PRO.conferencia.txt"
+NOME_DO_INSTALADOR = "instalador/TeleZapp_PRO.exe"
 # arquivo a mais com uma destas extensoes roda junto com o programa
 EXTENSOES_DE_CODIGO = (".exe", ".dll", ".pyd", ".py", ".pyc", ".pyz", ".bat",
                        ".cmd", ".ps1", ".vbs")

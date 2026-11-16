@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Fábio Scheffer Moraes
-"""Instalador de um arquivo so (TeleZapp.exe das Releases): abre a tela de
+"""Instalador de um arquivo so (TeleZapp_PRO.exe das Releases): abre a tela de
 boas-vindas com Instalar, Criar copia portatil, Guia de uso e Fechar. O
-programa vem dentro dele, como TeleZapp.zip; instalar ou criar a copia
+programa vem dentro dele, como TeleZapp_PRO.zip; instalar ou criar a copia
 portatil extrai esse zip e usa a mesma logica do programa. Ao terminar, o
 instalador nao deixa nada para tras.
 
@@ -12,7 +12,7 @@ import os
 import sys
 import traceback
 
-ARQUIVO = "TeleZapp.zip"
+ARQUIVO = "TeleZapp_PRO.zip"
 
 
 def caminho_do_pacote(argv=None):

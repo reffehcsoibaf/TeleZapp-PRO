@@ -83,7 +83,7 @@ def _arquivos(r, versao):
         if isinstance(a, dict):
             achados[str(a.get("name"))] = a
     # nome fixo; as primeiras Releases traziam a versao no nome
-    for nome in ("TeleZapp.zip", "TeleZapp-%s.zip" % versao):
+    for nome in ("TeleZapp_PRO.zip", "TeleZapp_PRO-%s.zip" % versao):
         zip_, hash_ = achados.get(nome), achados.get(nome + ".sha256")
         if zip_ and hash_:
             break
@@ -242,8 +242,8 @@ def _pelo_site(tempo=10):
     base = "%s/releases/download/%s/" % (SITE, achou.group(1))
     novidades = novidades_da_pagina(pagina)
     return Lancamento(
-        versao, "", final, False, "TeleZapp.zip", base + "TeleZapp.zip",
-        base + "TeleZapp.zip.sha256", 0,
+        versao, "", final, False, "TeleZapp_PRO.zip", base + "TeleZapp_PRO.zip",
+        base + "TeleZapp_PRO.zip.sha256", 0,
         [(versao, novidades or
           "As novidades estão na página da versão: " + final)])
 

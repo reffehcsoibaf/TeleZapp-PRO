@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
-# O instalador de um arquivo so (TeleZapp.exe das Releases), com o
-# TeleZapp.zip dentro. Gerado por ferramentas/empacotar.py, que passa o zip
+# O instalador de um arquivo so (TeleZapp_PRO.exe das Releases), com o
+# TeleZapp_PRO.zip dentro. Gerado por ferramentas/empacotar.py, que passa o zip
 # em TELEZAPP_PACOTE.
 import os
 
@@ -24,7 +24,7 @@ a = Analysis(
               "PIL", "emoji", "tkinter"],
     noarchive=False, optimize=0)
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="TeleZapp",
+exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], name="TeleZapp_PRO",
           debug=False, bootloader_ignore_signals=False, strip=False,
           upx=False, runtime_tmpdir=None, console=False,
           disable_windowed_traceback=False,

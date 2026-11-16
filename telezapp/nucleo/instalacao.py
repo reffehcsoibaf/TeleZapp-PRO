@@ -12,7 +12,7 @@ Tres modos, so no executavel (PyInstaller):
   desenvolvimento  rodando pelo Python: nada disso se aplica.
 
 Instalar copia a pasta do programa, cria os atalhos e a entrada em
-"Aplicativos instalados" (HKCU), que chama `TeleZapp.exe --desinstalar`.
+"Aplicativos instalados" (HKCU), que chama `TeleZapp PRO.exe --desinstalar`.
 """
 import contextlib
 import logging

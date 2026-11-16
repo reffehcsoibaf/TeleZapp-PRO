@@ -152,10 +152,10 @@ def test_notas_trazem_os_hashes_que_a_pagina_confere(tmp_path):
     pub = _publicar()
     lista = tmp_path / "lista.txt"
     lista.write_text("%s *TeleZapp PRO.exe\n%s *_internal/a.dll\n"
-                     "%s *instalador/TeleZapp.exe\n" % ("a" * 64, "b" * 64,
+                     "%s *instalador/TeleZapp_PRO.exe\n" % ("a" * 64, "b" * 64,
                                                         "c" * 64))
     assert pub.hashes_da_conferencia(str(lista)) == ("c" * 64, "a" * 64)
-    notas = pub.montar_notas("2026.1.1.0", "d" * 64, "TeleZapp.zip",
+    notas = pub.montar_notas("2026.1.1.0", "d" * 64, "TeleZapp_PRO.zip",
                              *pub.hashes_da_conferencia(str(lista)))
     assert "SHA-256 do zip: `%s`" % ("d" * 64) in notas
     assert "SHA-256 do instalador: `%s`" % ("c" * 64) in notas
@@ -166,7 +166,7 @@ def test_notas_trazem_os_hashes_que_a_pagina_confere(tmp_path):
 def test_notas_do_publicar_voltam_inteiras_pelo_novidades_do_corpo():
     pub = _publicar()
     versao = pub.versao_atual()
-    notas = pub.montar_notas(versao, "abc123", "TeleZapp.zip")
+    notas = pub.montar_notas(versao, "abc123", "TeleZapp_PRO.zip")
     texto = at.novidades_do_corpo(notas, versao)
     assert "Software experimental" not in texto and "abc123" not in texto
     assert "Como usar" not in texto and texto.startswith("- ")
@@ -277,9 +277,9 @@ def test_consultar_diz_o_motivo_quando_tudo_falha():
 def test_consultar_usa_o_site_quando_a_api_recusa():
     def limite(url):
         raise urllib.error.HTTPError(url, 403, "rate limit", {}, None)
-    achado = at.Lancamento("2026.10.24.0", "", "pag", False, "TeleZapp.zip",
-                           "https://github.com/x/TeleZapp.zip",
-                           "https://github.com/x/TeleZapp.zip.sha256")
+    achado = at.Lancamento("2026.10.24.0", "", "pag", False, "TeleZapp_PRO.zip",
+                           "https://github.com/x/TeleZapp_PRO.zip",
+                           "https://github.com/x/TeleZapp_PRO.zip.sha256")
     assert at.consultar(limite, lambda: achado) is achado
 
 
@@ -305,7 +305,7 @@ def test_plano_b_le_a_versao_do_endereco_da_ultima_release(monkeypatch):
     assert visto == [at.SITE + "/releases/latest"]
     assert lanc.versao == "2026.10.24.0" and not lanc.pre
     assert lanc.url_zip == at.SITE + \
-        "/releases/download/2026.10.24.0/TeleZapp.zip"
+        "/releases/download/2026.10.24.0/TeleZapp_PRO.zip"
     assert lanc.url_hash == lanc.url_zip + ".sha256"
     monkeypatch.setattr(at.urllib.request, "urlopen",
                         lambda p, timeout=0, context=None:

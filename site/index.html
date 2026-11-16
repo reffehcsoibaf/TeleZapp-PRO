@@ -102,16 +102,16 @@ footer { border-top: 1px solid var(--linha); margin-top: 3rem; padding: 1.5rem 0
   <section aria-labelledby="como">
     <h2 id="como">Como instalar</h2>
     <ol>
-      <li>Baixe o <code>TeleZapp.exe</code> e abra.</li>
+      <li>Baixe o <code>TeleZapp_PRO.exe</code> e abra.</li>
       <li>A tela de boas-vindas tem os botões <strong>Instalar</strong> (sem precisar de administrador), <strong>Criar cópia portátil</strong> (para levar num pendrive), <strong>Guia de uso</strong> e <strong>Fechar</strong>.</li>
       <li>Para atualizar, use <em>Ajuda, Verificar atualizações</em> dentro do programa: ele baixa a versão nova, confere o arquivo e se reabre atualizado, mantendo os seus dados.</li>
     </ol>
-    <p>Na página de cada versão há também o <code>TeleZapp.zip</code>, a pasta do programa pronta para extrair, que o próprio TeleZapp usa para se atualizar, e o código de conferência SHA-256 dele.</p>
+    <p>Na página de cada versão há também o <code>TeleZapp_PRO.zip</code>, a pasta do programa pronta para extrair, que o próprio TeleZapp usa para se atualizar, e o código de conferência SHA-256 dele.</p>
   </section>
 
   <section aria-labelledby="verificar">
     <h2 id="verificar">Verificar um arquivo</h2>
-    <p>Recebeu o TeleZapp de outra pessoa ou de outro site? Escolha o arquivo aqui para saber se é o que foi publicado. Serve para o instalador <code>TeleZapp.exe</code>, para o <code>TeleZapp.zip</code> e para o <code>TeleZapp.exe</code> da pasta do programa instalado. O arquivo não é enviado a lugar nenhum: a conferência acontece no seu navegador.</p>
+    <p>Recebeu o TeleZapp de outra pessoa ou de outro site? Escolha o arquivo aqui para saber se é o que foi publicado. Serve para o instalador <code>TeleZapp_PRO.exe</code>, para o <code>TeleZapp_PRO.zip</code> e para o <code>TeleZapp_PRO.exe</code> da pasta do programa instalado. O arquivo não é enviado a lugar nenhum: a conferência acontece no seu navegador.</p>
     <p>O TeleZapp oficial funciona no Windows 10 ou 11 e não é distribuído em contêiner. Uma cópia que rode em Windows mais antigo ou que venha nesse formato não foi feita nem verificada pelo autor. Use esta seção antes de executar.</p>
     <p>Confira se está mesmo em <code>github.com/reffehcsoibaf/TeleZapp-PRO</code>, porque um site falso poderia dizer que qualquer arquivo é oficial.</p>
     <form class="verificar" id="form-verificar">
@@ -120,7 +120,7 @@ footer { border-top: 1px solid var(--linha); margin-top: 3rem; padding: 1.5rem 0
       <button type="submit" class="botao" id="botao-verificar">Verificar</button>
     </form>
     <p class="resultado" id="resultado-verificar" role="status"></p>
-    <p class="nota">Na pasta instalada, só o <code>TeleZapp.exe</code> é conferido aqui. A conferência de todos os arquivos fica em Ajuda, Sobre, dentro do programa.</p>
+    <p class="nota">Na pasta instalada, só o <code>TeleZapp PRO.exe</code> é conferido aqui. A conferência de todos os arquivos fica em Ajuda, Sobre, dentro do programa.</p>
   </section>
 
   <section aria-labelledby="recursos">
@@ -173,7 +173,7 @@ footer { border-top: 1px solid var(--linha); margin-top: 3rem; padding: 1.5rem 0
       });
       if (!melhor) { return; }
       var zip = (melhor.r.assets || []).filter(function (a) {
-        return a.name === "TeleZapp.exe";
+        return a.name === "TeleZapp_PRO.exe";
       })[0];
       botao.textContent = "Baixar o instalador do TeleZapp " + melhor.v;
       botao.href = zip ? zip.browser_download_url : melhor.r.html_url;
@@ -192,7 +192,7 @@ footer { border-top: 1px solid var(--linha); margin-top: 3rem; padding: 1.5rem 0
   var entrada = document.getElementById("arquivo-verificar");
   var botao = document.getElementById("botao-verificar");
   var saida = document.getElementById("resultado-verificar");
-  var NOMES = { "zip": "o TeleZapp.zip", "instalador": "o instalador",
+  var NOMES = { "zip": "o TeleZapp_PRO.zip", "instalador": "o instalador",
                 "programa instalado": "o programa instalado" };
 
   function publicados() {

@@ -4835,7 +4835,7 @@ def test_atualizar_mostra_a_barra_e_fecha_no_fim(j, monkeypatch):
                                                                 nova)))
     j.Close = lambda *a, **k: True
     lanc = jm.atualizacao.Lancamento("2026.11.1.0", "", "p", False,
-                                     "TeleZapp.zip", "u", "h", 100)
+                                     "TeleZapp_PRO.zip", "u", "h", 100)
     j._atualizar(lanc)
     for _ in range(200):                  # o trabalho roda numa thread
         if aplicado:
@@ -4866,7 +4866,7 @@ def test_atualizar_cancelado_fecha_a_barra_sem_trocar_nada(j, monkeypatch):
                         lambda *a: aplicado.append(a))
     j.fala.falar = lambda t, interromper=False: ditas.append(t)
     lanc = jm.atualizacao.Lancamento("2026.11.1.0", "", "p", False,
-                                     "TeleZapp.zip", "u", "h", 100)
+                                     "TeleZapp_PRO.zip", "u", "h", 100)
     j._atualizar(lanc)
     for _ in range(200):
         if j._atualizando is False:

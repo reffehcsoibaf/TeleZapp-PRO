@@ -428,7 +428,7 @@ def outro_aberto():
 
 
 def desinstalar_pelo_aplicativo():
-    """`TeleZapp.exe --desinstalar` (Aplicativos instalados). Devolve o codigo
+    """`TeleZapp PRO.exe --desinstalar` (Aplicativos instalados). Devolve o codigo
     de saida."""
     app = wx.App(False)       # precisa continuar referenciado
     try:

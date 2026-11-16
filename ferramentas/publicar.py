@@ -5,12 +5,12 @@
 Reaproveita o que ferramentas/empacotar.py gerou em lancamento/ (se o zip
 ainda nao existe, monta a partir da pasta do programa) e deixa la:
 
-    TeleZapp.exe          o instalador de um arquivo so (gerado pelo
+    TeleZapp_PRO.exe          o instalador de um arquivo so (gerado pelo
                           empacotar.py); e o que as pessoas baixam
-    TeleZapp.zip          a pasta do programa, pronta para extrair (o nome
-                          e fixo: .../releases/latest/download/TeleZapp.zip
+    TeleZapp_PRO.zip          a pasta do programa, pronta para extrair (o nome
+                          e fixo: .../releases/latest/download/TeleZapp_PRO.zip
                           sempre leva a versao mais nova)
-    TeleZapp.zip.sha256   o hash para conferir o download
+    TeleZapp_PRO.zip.sha256   o hash para conferir o download
     consulta.txt          arquivo publico que cada copia baixa uma vez por
                           dia; os downloads dele dao a ideia de copias em uso
     notas.md                       o texto da Release (aviso de software
@@ -74,7 +74,7 @@ def hashes_da_conferencia(caminho):
     projeto confere um arquivo escolhido pela pessoa com estes valores."""
     achados = dict(reversed(l.strip().split(" *", 1)) for l in open(
         caminho, encoding="utf-8") if " *" in l)
-    return (achados.get("instalador/TeleZapp.exe", ""),
+    return (achados.get("instalador/TeleZapp_PRO.exe", ""),
             achados.get("TeleZapp PRO.exe", ""))
 
 
@@ -86,7 +86,7 @@ def montar_notas(versao, hash_zip, nome_zip, hash_instalador="",
         "(Sem texto de novidades para esta versão.)"]
     linhas += [
         "", "## Como usar", "",
-        "1. Baixe `TeleZapp.exe` e abra. A tela de boas-vindas tem os "
+        "1. Baixe `TeleZapp_PRO.exe` e abra. A tela de boas-vindas tem os "
         "botões Instalar, Criar cópia portátil, Guia de uso e Fechar.",
         "2. Para atualizar, use Ajuda, Verificar atualizações dentro do "
         "programa: ele baixa `%s` (o mesmo programa em zip), confere o "
@@ -139,7 +139,7 @@ def main():
 
     versao = versao_atual()
     os.makedirs(args.saida, exist_ok=True)
-    nome_zip = "TeleZapp.zip"
+    nome_zip = "TeleZapp_PRO.zip"
     zip_ = os.path.join(args.saida, nome_zip)
     if os.path.isfile(zip_):          # o empacotar.py ja montou
         print("Usando %s." % zip_)
@@ -151,11 +151,11 @@ def main():
     else:
         print("Montando %s..." % zip_)
         hash_zip = montar_zip(args.pasta, zip_)
-    instalador = os.path.join(args.saida, "TeleZapp.exe")
+    instalador = os.path.join(args.saida, "TeleZapp_PRO.exe")
     if not os.path.isfile(instalador):
         sys.exit("Não achei %s. Rode ferramentas/empacotar.py antes." %
                  instalador)
-    conferencia = os.path.join(args.saida, "TeleZapp.conferencia.txt")
+    conferencia = os.path.join(args.saida, "TeleZapp_PRO.conferencia.txt")
     if not os.path.isfile(conferencia):
         sys.exit("Não achei %s. Rode ferramentas/empacotar.py antes." %
                  conferencia)

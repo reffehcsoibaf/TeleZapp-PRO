@@ -2,9 +2,9 @@
 # Copyright (C) 2026 Fábio Scheffer Moraes
 """Gera o que vai para a Release, em lancamento/:
 
-    TeleZapp.zip        a pasta do programa (o atualizador usa este)
-    TeleZapp.zip.sha256 o hash do zip
-    TeleZapp.exe        o instalador de um arquivo so, com o zip dentro
+    TeleZapp_PRO.zip        a pasta do programa (o atualizador usa este)
+    TeleZapp_PRO.zip.sha256 o hash do zip
+    TeleZapp_PRO.exe        o instalador de um arquivo so, com o zip dentro
 
 Passos: PyInstaller do programa (pasta), zip da pasta, PyInstaller do
 instalador com o zip embutido. Depois, `python ferramentas/publicar.py`
@@ -111,26 +111,26 @@ def _montar(so_programa=False):
     if so_programa:
         print("Pronto: %s" % os.path.join(programa, "TeleZapp PRO"))
         return
-    zip_ = os.path.join(SAIDA, "TeleZapp.zip")
+    zip_ = os.path.join(SAIDA, "TeleZapp_PRO.zip")
     print("2/3 Montando %s..." % zip_)
     hash_zip = publicar.montar_zip(os.path.join(programa, "TeleZapp PRO"), zip_)
     with open(zip_ + ".sha256", "w", encoding="utf-8") as f:
-        f.write("%s *TeleZapp.zip\n" % hash_zip)
+        f.write("%s *TeleZapp_PRO.zip\n" % hash_zip)
     print("3/3 Gerando o instalador...")
     pyinstaller(os.path.join(RAIZ, "ferramentas", "empacotar",
                              "Instalador.spec"), SAIDA,
                 os.path.join(TRABALHO, "work-instalador"),
                 {"TELEZAPP_PACOTE": zip_,
                  "TELEZAPP_VERSAO": arquivo_de_versao(
-                     TRABALHO, "Instalador do TeleZapp PRO", "TeleZapp.exe")})
-    exe = os.path.join(SAIDA, "TeleZapp.exe")
+                     TRABALHO, "Instalador do TeleZapp PRO", "TeleZapp_PRO.exe")})
+    exe = os.path.join(SAIDA, "TeleZapp_PRO.exe")
     from telezapp.nucleo import copia_oficial
     with open(os.path.join(SAIDA, copia_oficial.ARQUIVO_DA_LISTA), "w",
               encoding="utf-8") as f:
         f.write(copia_oficial.gerar_lista(os.path.join(programa, "TeleZapp PRO"),
                                           exe))
     h = hashlib.sha256(open(exe, "rb").read()).hexdigest()
-    print("Pronto em %s:\n  TeleZapp.zip  %.0f MB\n  TeleZapp.exe  %.0f MB "
+    print("Pronto em %s:\n  TeleZapp_PRO.zip  %.0f MB\n  TeleZapp_PRO.exe  %.0f MB "
           "(SHA-256 %s)" % (SAIDA, os.path.getsize(zip_) / 1048576,
                             os.path.getsize(exe) / 1048576, h))
 

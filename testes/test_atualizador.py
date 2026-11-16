@@ -37,7 +37,7 @@ class Resp(io.BytesIO):
 
 
 def _lanc(versao="2026.11.1.0"):
-    nome = "TeleZapp-%s.zip" % versao
+    nome = "TeleZapp_PRO-%s.zip" % versao
     return at.Lancamento(
         versao, "", "p", False, nome,
         "https://github.com/reffehcsoibaf/TeleZapp-PRO/releases/download/x/" + nome,
@@ -55,7 +55,7 @@ def _abrir_de(zip_bytes, hash_texto=None):
 
 def test_release_com_zip_e_hash_vira_lancamento_atualizavel():
     versao = "2026.11.1.0"
-    nome = "TeleZapp-%s.zip" % versao
+    nome = "TeleZapp_PRO-%s.zip" % versao
     dados = [{"tag_name": versao, "assets": [
         {"name": nome, "browser_download_url": "https://github.com/z",
          "size": 7},
@@ -65,9 +65,9 @@ def test_release_com_zip_e_hash_vira_lancamento_atualizavel():
         nome, "https://github.com/z", "https://github.com/h", 7)
     # nome fixo, o que o publicar.py passou a usar
     dados[0]["assets"] = [
-        {"name": "TeleZapp.zip", "browser_download_url": "https://github.com/z2"},
-        {"name": "TeleZapp.zip.sha256", "browser_download_url": "https://github.com/h2"}]
-    assert at.mais_nova(dados).nome_zip == "TeleZapp.zip"
+        {"name": "TeleZapp_PRO.zip", "browser_download_url": "https://github.com/z2"},
+        {"name": "TeleZapp_PRO.zip.sha256", "browser_download_url": "https://github.com/h2"}]
+    assert at.mais_nova(dados).nome_zip == "TeleZapp_PRO.zip"
     dados[0]["assets"] = [
         {"name": nome, "browser_download_url": "https://github.com/z",
          "size": 7},
@@ -156,7 +156,7 @@ def test_baixar_pode_ser_cancelado_e_apaga_o_parcial(tmp_path):
         au.baixar(_lanc(), str(tmp_path), abrir=_abrir_de(dados),
                   cancelado=cancelado)
     assert "cancelada" in str(e.value)
-    assert not os.path.exists(tmp_path / "TeleZapp.zip")
+    assert not os.path.exists(tmp_path / "TeleZapp_PRO.zip")
 
 
 def test_extrair_informa_o_avanco(tmp_path):
